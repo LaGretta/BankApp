@@ -2,7 +2,7 @@
 
 namespace BankApp.Application.DTO;
 
-public class TransactionDto
+public class TransferDto   
 {
     public int FromAccountId { get; set; }
     public int ToAccountId { get; set; }

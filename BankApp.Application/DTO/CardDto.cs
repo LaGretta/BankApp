@@ -2,7 +2,7 @@
 
 namespace BankApp.Application.DTO;
 
-public class CreteCardDto
+public class CreateCardDto
 {
     public int AccountId { get; set; }      
     public CardType CardType { get; set; }
