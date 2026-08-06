@@ -24,7 +24,8 @@ public class TransactionResponseDto
 }
 public class TopUpDto
 {
-    public int ToAccountId { get; set; }
+    public string CardNumber { get; set; } = string.Empty;   
     public decimal Amount { get; set; }
     public string IdempotencyKey { get; set; } = string.Empty;
 }
+
