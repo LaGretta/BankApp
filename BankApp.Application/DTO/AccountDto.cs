@@ -4,8 +4,7 @@ namespace BankApp.Application.DTO;
 
 public class CreateAccountDto
 {
-    public int AccountId { get; set; }    
-    public CardType CardType { get; set; }
+    public Currency Currency { get; set; }
 }
 public class AccountResponseDto
 {
