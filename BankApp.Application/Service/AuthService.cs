@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using BankApp.Application.DTO;
 using BankApp.Application.Interfaces.Repository;
+using BankApp.Application.Interfaces.Security;
 using BankApp.Application.Interfaces.Service;
-using BankApp.Application.Security;
 using BankApp.Domain.Entities;
 using BankApp.Domain.Enums;
 using Microsoft.Extensions.Logging;

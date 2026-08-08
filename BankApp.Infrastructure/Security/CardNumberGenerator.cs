@@ -1,5 +1,4 @@
 ﻿using BankApp.Application.Interfaces.Security;
-using BankApp.Application.Security;
 
 namespace BankApp.Infrastructure.Security;
 
