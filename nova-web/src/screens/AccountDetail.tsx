@@ -10,7 +10,7 @@ import { CardSkeleton } from '../components/Skeleton'
 import { ErrorScreen } from '../components/StateScreen'
 import { TopBar } from '../components/TopBar'
 import { useAsync } from '../hooks/useAsync'
-import { CURRENCY_NAME, NUM_TO_CURRENCY, NUM_TO_TIER } from '../lib/enums'
+import { CURRENCY_NAME } from '../lib/enums'
 
 export function AccountDetail() {
   const { id } = useParams()
@@ -18,7 +18,7 @@ export function AccountDetail() {
   const navigate = useNavigate()
   const { data: account, loading, error, reload } = useAsync(() => getAccount(accountId), [accountId])
 
-  const code = account ? (NUM_TO_CURRENCY[account.currency] ?? 'UAH') : 'UAH'
+  const code = account ? account.currency : 'UAH'
 
   return (
     <div>
@@ -96,7 +96,7 @@ export function AccountDetail() {
                   style={{ padding: 0, textAlign: 'left', width: '100%' }}
                 >
                   <BankCard
-                    tier={NUM_TO_TIER[card.cardType] ?? 'White'}
+                    tier={card.cardType}
                     number={card.number}
                     holderName={card.holderName}
                     expiryDate={card.expiryDate}

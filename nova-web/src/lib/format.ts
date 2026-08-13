@@ -1,4 +1,4 @@
-import { CURRENCY_SYMBOL, NUM_TO_CURRENCY, type CurrencyCode } from './enums'
+import { CURRENCY_SYMBOL, type CurrencyCode } from './enums'
 
 /** Форматує число з роздільником тисяч і 2 знаками. Напр. 12345.5 → "12 345,50" */
 export function formatAmount(value: number): string {
@@ -16,13 +16,13 @@ export function splitAmount(value: number): { int: string; frac: string } {
   return { int: intGrouped, frac }
 }
 
-export function symbolFor(currency: CurrencyCode): string {
-  return CURRENCY_SYMBOL[currency]
+export function symbolFor(currency: string): string {
+  return CURRENCY_SYMBOL[currency as CurrencyCode] ?? ''
 }
 
-export function symbolForNum(currencyNum: number): string {
-  const code = NUM_TO_CURRENCY[currencyNum] ?? 'UAH'
-  return CURRENCY_SYMBOL[code]
+/** Псевдо-IBAN для відображення (реального IBAN бекенд не віддає): UA••3204 */
+export function pseudoIban(accountId: number): string {
+  return `UA••${String(accountId).padStart(4, '0').slice(-4)}`
 }
 
 /** Маскує номер картки, лишаючи 4 останні: •••• •••• •••• 1234 */

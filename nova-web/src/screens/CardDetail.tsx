@@ -10,7 +10,7 @@ import { Sheet } from '../components/Sheet'
 import { TopBar } from '../components/TopBar'
 import { useAsync } from '../hooks/useAsync'
 import { ApiError } from '../lib/apiClient'
-import { NUM_TO_TIER, TIER_LABEL } from '../lib/enums'
+import { TIER_LABEL } from '../lib/enums'
 import { formatExpiry, last4 } from '../lib/format'
 import { toast } from '../store/toastStore'
 
@@ -21,7 +21,7 @@ export function CardDetail() {
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const tier = card ? (NUM_TO_TIER[card.cardType] ?? 'White') : 'White'
+  const tier = card ? card.cardType : 'White'
 
   async function doBlock() {
     setBusy(true)

@@ -1,6 +1,6 @@
 import { CreditCard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { topUp } from '../api/transactions'
 import { Button } from '../components/Button'
 import { Field } from '../components/Field'
@@ -12,7 +12,11 @@ import { toast } from '../store/toastStore'
 
 export function TopUp() {
   const navigate = useNavigate()
-  const [cardNumber, setCardNumber] = useState('')
+  const location = useLocation()
+  const prefill = (location.state as { cardNumber?: string } | null)?.cardNumber
+  const [cardNumber, setCardNumber] = useState(
+    prefill ? prefill.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim() : '',
+  )
   const [amount, setAmount] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -112,7 +116,7 @@ export function TopUp() {
         <SuccessOverlay
           title="Рахунок поповнено"
           subtitle={`${amountNum.toFixed(2)} зараховано на картку •• ${digits.slice(-4)}.`}
-          onDone={() => navigate('/dashboard', { replace: true })}
+          onDone={() => navigate('/dashboard', { replace: true, state: { focusCardNumber: digits } })}
         />
       )}
     </div>

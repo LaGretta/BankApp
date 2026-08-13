@@ -65,6 +65,9 @@ input::placeholder {
   background: var(--s3);
   border-radius: 999px;
 }
+.carousel-scroll::-webkit-scrollbar {
+  display: none;
+}
 
 /* ------- app shell (no device chrome — just the app itself) ------- */
 .app-root {
@@ -302,6 +305,18 @@ input::placeholder {
 @keyframes sheet-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+/* reveal номера картки: blur 7 → 0 (motion-спека §6) */
+@keyframes card-reveal {
+  from { filter: blur(7px); opacity: 0.4; }
+  to { filter: blur(0); opacity: 1; }
+}
+/* спекулярне світло, що перетинає картку в середині фліпу (~260ms з 520ms) */
+@keyframes flip-sheen {
+  0% { opacity: 0; transform: translateX(-70%) skewX(-16deg); }
+  45% { opacity: 0.9; }
+  55% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(70%) skewX(-16deg); }
 }
 
 .screen-enter {

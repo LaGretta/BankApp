@@ -8,13 +8,7 @@ import { ErrorScreen } from '../components/StateScreen'
 import { TopBar } from '../components/TopBar'
 import { txDirection } from '../components/TransactionRow'
 import { useAsync } from '../hooks/useAsync'
-import {
-  NUM_TO_CURRENCY,
-  NUM_TO_TXSTATUS,
-  NUM_TO_TXTYPE,
-  TXSTATUS_LABEL,
-  TXTYPE_LABEL,
-} from '../lib/enums'
+import { TXSTATUS_LABEL, TXTYPE_LABEL } from '../lib/enums'
 import { formatDateTime } from '../lib/format'
 
 export function TransactionDetail() {
@@ -36,8 +30,8 @@ export function TransactionDetail() {
       ) : (
         (() => {
           const dir = txDirection(tx)
-          const type = NUM_TO_TXTYPE[tx.type]
-          const status = NUM_TO_TXSTATUS[tx.status]
+          const type = tx.type
+          const status = tx.status
           const Icon =
             type === 'TopUp' ? PlusCircle : type === 'Payment' ? CreditCard : dir === 'in' ? ArrowDownLeft : ArrowUpRight
           const statusColor =
@@ -83,7 +77,7 @@ export function TransactionDetail() {
                 <div className="hairline-top" />
                 <Row label="Дата й час" value={formatDateTime(tx.createdAt)} />
                 <div className="hairline-top" />
-                <Row label="Валюта" value={NUM_TO_CURRENCY[tx.currency] ?? '—'} mono />
+                <Row label="Валюта" value={tx.currency ?? '—'} mono />
                 {tx.fromAccountId != null && (
                   <>
                     <div className="hairline-top" />

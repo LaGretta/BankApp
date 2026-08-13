@@ -79,52 +79,31 @@ public/
 
 ---
 
-## ⚠️ ВАЖЛИВО — знайдені розбіжності в бекенді (виправляєш ти, я туди не ліз)
+## Контракт enum — РЯДКИ ✅
 
-Під час підключення я **лише читав** твої DTO/контролери/enums, щоб знати форму JSON.
-Нічого в бекенді не змінював. Ось що варто поправити:
-
-### 1. `CardType` enum — ПОРОЖНІЙ 🔴
-`BankApp.Domain/Enums/CardType.cs` не має жодного значення:
-```csharp
-public enum CardType { }   // немає White / Black / Platinum
-```
-Контракт очікує типи карток White/Black/Platinum. Зараз фронт шле `cardType` числом
-(White=0, Black=1, Platinum=2), а `System.Text.Json` пропускає невизначені числові
-значення enum — тому створення картки **працює**, але бекенд не розрізняє тарифи.
-
-**Що зробити:**
-```csharp
-public enum CardType { White, Black, Platinum }
-```
-Порядок значень має збігатися з `src/lib/enums.ts` (`TIER_TO_NUM`).
-
-### 2. Немає `JsonStringEnumConverter` 🟠
-У `Program.cs` не зареєстровано string-конвертер для enum, тому всі enum'и ходять по
-дроту **числами** — і у відповідях, і в тілах запитів. Твій контракт у ТЗ казав слати
-рядки (`{ currency: "UAH" }`, `{ cardType: "White" }`) — так бекенд повернув би **400**.
-
-Тому фронт свідомо шле/читає **числа** (єдине джерело — `src/lib/enums.ts`):
+Бекенд оновлено (JsonStringEnumConverter). Усі enum ходять рядками — фронт мігровано
+відповідно (`src/lib/enums.ts` — string-first):
 
 | enum | значення |
 |---|---|
-| Currency | UAH=0, USD=1, EUR=2 |
-| CardType | White=0, Black=1, Platinum=2 |
-| TransactionType | Transfer=0, TopUp=1, Payment=2, Withdrawal=3 |
-| TransactionStatus | Pending=0, Completed=1, Failed=2 |
+| Currency | `"UAH"` / `"USD"` / `"EUR"` |
+| CardType | `"White"` / `"Black"` / `"Platinum"` |
+| TransactionType | `"Transfer"` / `"TopUp"` / `"Payment"` / `"Withdrawal"` |
+| TransactionStatus | `"Pending"` / `"Completed"` / `"Failed"` |
 
-**Якщо хочеш рядки** (читабельніший API) — додай у `Program.cs`:
-```csharp
-builder.Services.AddControllers().AddJsonOptions(o =>
-    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-```
-…і скажи мені — я за 2 хвилини переведу `src/lib/enums.ts` на рядкові значення.
+## Нові ендпоінти v2 (підключено)
 
-### 3. `AccountController` без `[Authorize]` 🟡
-`Cards`/`Transactions` контролери мають `[Authorize]`, а `AccountController` — ні, хоча
-всередині викликає `GetUserId()` з клеймів токена. З валідним токеном усе працює
-(middleware наповнює `User`), але **без** токена буде `500` (бо `int.Parse(null)`) замість
-`401`. Не блокер, але для консистентності додай `[Authorize]` на `AccountController`.
+- `GET /api/cards/{id}/cvv` → `{ cvv }` — CVV тягнеться **лише на тап** «показати» на звороті
+  картки (не наперед), тоді blur→sharp.
+- `POST /api/transactions/transfer-by-card` `{ fromAccountId, cardNumber, amount, description, idempotencyKey }`
+  — **первинний** переказ за номером картки. Помилки ProblemDetails показуються юзеру як `detail`.
+
+### ⚠️ Дрібниці, які лишаю тобі (бекенд не чіпав)
+- **`detail` помилок transfer-by-card — англійською** («Card not found», «Insufficient funds»…).
+  Фронт показує `detail` як є (за контрактом). Якщо хочеш українською — локалізуй на бекенді.
+- **IBAN / «Основний»** — реальних полів немає, тому на звороті картки псевдо-IBAN
+  синтезовано з `id` (`UA••NNNN`, `src/lib/format.ts → pseudoIban`), «Основний» = перший рахунок. Косметика.
+- **Ліміти** (кнопка на звороті) — бекенду немає, показую заглушку-шторку «скоро».
 
 ---
 

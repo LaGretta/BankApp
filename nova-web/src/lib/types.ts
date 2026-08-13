@@ -1,18 +1,20 @@
-/* Форма JSON з бекенду (прочитана з DTO — НЕ змінювати без зміни контракту). */
+import type { CardTier, CurrencyCode, TxStatus, TxType } from './enums'
+
+/* Форма JSON з бекенду. Enum-и — РЯДКИ (JsonStringEnumConverter). */
 
 export interface AuthResponse {
   id: number
   firstName: string
   lastName: string
   email: string
-  role: number // enum Role як число
+  role: string // "User" | "Admin"
   createdAt: string
   token: string
 }
 
 export interface CardResponse {
   id: number
-  cardType: number // enum CardType як число
+  cardType: CardTier // "White" | "Black" | "Platinum"
   number: string // повний номер (маскуємо в UI)
   holderName: string
   expiryDate: string // ISO DateTime
@@ -22,16 +24,21 @@ export interface CardResponse {
 /* Повертається ОДИН раз при створенні картки — містить CVV. */
 export interface CardCreated {
   id: number
-  cardType: number
+  cardType: CardTier
   number: string
   cvv: string
   holderName: string
   expiryDate: string
 }
 
+/* GET /api/cards/{id}/cvv */
+export interface CardCvv {
+  cvv: string
+}
+
 export interface AccountResponse {
   id: number
-  currency: number // enum Currency як число
+  currency: CurrencyCode
   balance: number
   cards: CardResponse[]
 }
@@ -41,9 +48,9 @@ export interface TransactionResponse {
   fromAccountId: number | null
   toAccountId: number | null
   amount: number
-  currency: number
-  type: number
-  status: number
+  currency: CurrencyCode
+  type: TxType
+  status: TxStatus
   description: string
   createdAt: string
 }

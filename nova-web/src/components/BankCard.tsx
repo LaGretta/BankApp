@@ -1,5 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { type CSSProperties, useState } from 'react'
+import { useLongPress } from '../hooks/useLongPress'
+import { copyToClipboard } from '../lib/clipboard'
 import type { CardTier } from '../lib/enums'
 import { formatExpiry, groupCardNumber, maskCardNumber } from '../lib/format'
 
@@ -62,8 +64,23 @@ export function BankCard({
   style,
 }: BankCardProps) {
   const [revealed, setRevealed] = useState(false)
+  const [revealSeq, setRevealSeq] = useState(0) // ключ для перезапуску blur-анімації
   const skin = SKINS[tier]
   const blocked = !isActive
+  const digitsOnly = number.replace(/\s+/g, '')
+
+  const toggleReveal = () =>
+    setRevealed((r) => {
+      if (!r) setRevealSeq((s) => s + 1)
+      return !r
+    })
+  const copyNumber = () => copyToClipboard(digitsOnly, 'Номер скопійовано')
+
+  // tap → показати/сховати, утримання → скопіювати повний номер
+  const { style: numGestureStyle, ...numGesture } = useLongPress({
+    onTap: interactive ? toggleReveal : undefined,
+    onLongPress: interactive ? copyNumber : undefined,
+  })
 
   return (
     <div
@@ -135,50 +152,49 @@ export function BankCard({
         )}
       </div>
 
-      {/* number */}
-      <button
-        type="button"
-        onClick={interactive ? () => setRevealed((r) => !r) : undefined}
-        disabled={!interactive}
+      {/* number — tap: показати/сховати · утримання: скопіювати */}
+      <div
+        {...(interactive ? numGesture : {})}
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        aria-label={
+          interactive ? 'Номер картки. Торкніться, щоб показати; утримуйте, щоб скопіювати' : undefined
+        }
+        onKeyDown={
+          interactive
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleReveal()
+                }
+              }
+            : undefined
+        }
         style={{
-          position: 'relative',
-          textAlign: 'left',
-          padding: 0,
-          cursor: interactive ? 'pointer' : 'default',
-          height: 24,
           display: 'flex',
           alignItems: 'center',
+          gap: 10,
+          minHeight: 26,
+          cursor: interactive ? 'pointer' : 'default',
+          ...(interactive ? numGestureStyle : null),
         }}
       >
         <span
+          key={revealSeq}
           className="num-card"
           style={{
             color: skin.fg,
-            filter: revealed ? 'blur(0px)' : 'blur(7px)',
-            opacity: revealed ? 1 : 0,
-            transition: 'filter 320ms ease-out, opacity 320ms ease-out',
-            position: 'absolute',
-            left: 0,
+            animation: revealed ? 'card-reveal 320ms ease-out' : 'none',
           }}
         >
-          {groupCardNumber(number)}
-        </span>
-        <span
-          className="num-card"
-          style={{
-            color: skin.fg,
-            opacity: revealed ? 0 : 1,
-            transition: 'opacity 320ms ease-out',
-          }}
-        >
-          {maskCardNumber(number)}
+          {revealed ? groupCardNumber(number) : maskCardNumber(number)}
         </span>
         {interactive && (
-          <span style={{ marginLeft: 10, opacity: 0.6, display: 'inline-flex' }}>
+          <span style={{ marginLeft: 'auto', opacity: 0.6, display: 'inline-flex', flexShrink: 0 }}>
             {revealed ? <EyeOff size={15} strokeWidth={1.9} /> : <Eye size={15} strokeWidth={1.9} />}
           </span>
         )}
-      </button>
+      </div>
 
       {/* bottom: holder + expiry */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>

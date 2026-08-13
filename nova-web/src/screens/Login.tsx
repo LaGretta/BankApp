@@ -1,4 +1,4 @@
-import { AtSign, Lock } from 'lucide-react'
+import { AtSign, Info, Lock } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
@@ -12,6 +12,8 @@ import { toast } from '../store/toastStore'
 export function Login() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const sessionExpired = useAuthStore((s) => s.sessionExpired)
+  const clearSessionExpired = useAuthStore((s) => s.clearSessionExpired)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,6 +22,7 @@ export function Login() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setErr(null)
+    clearSessionExpired()
     setBusy(true)
     try {
       const res = await login(email.trim(), password)
@@ -27,7 +30,12 @@ export function Login() {
       toast.success(`Вітаємо, ${res.firstName}!`)
       navigate('/dashboard', { replace: true })
     } catch (e) {
-      const msg = e instanceof ApiError ? e.detail : 'Не вдалося увійти'
+      const msg =
+        e instanceof ApiError
+          ? e.status === 401
+            ? 'Невірний email або пароль'
+            : e.detail
+          : 'Не вдалося увійти'
       setErr(msg)
     } finally {
       setBusy(false)
@@ -46,7 +54,27 @@ export function Login() {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 40 }}>
+      {sessionExpired && (
+        <div
+          style={{
+            marginTop: 28,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 14px',
+            borderRadius: 'var(--r-field)',
+            background: 'var(--accent-soft)',
+            border: '1px solid rgba(127,230,214,.3)',
+          }}
+        >
+          <Info size={18} strokeWidth={1.9} color="var(--accent)" style={{ flexShrink: 0 }} />
+          <span className="t-label" style={{ color: 'var(--text-1)' }}>
+            Сесія завершилась. Увійдіть знову.
+          </span>
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: sessionExpired ? 18 : 40 }}>
         <Field
           label="Email"
           type="email"

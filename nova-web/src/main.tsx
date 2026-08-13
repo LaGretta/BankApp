@@ -18,12 +18,12 @@ import './styles/global.css'
 import App from './App'
 import { registerUnauthorizedHandler } from './lib/apiClient'
 import { forceLogout } from './store/authStore'
-import { toast } from './store/toastStore'
 
-// 401 → чистимо токен, показуємо повідомлення; редірект зробить ProtectedRoute
+// 401 з дійсним токеном → прострочення сесії: чистимо токен + ставимо прапорець.
+// Редірект зробить ProtectedRoute, повідомлення покаже банер на екрані логіну
+// (надійніше за тост, який спалахує саме під час навігації).
 registerUnauthorizedHandler(() => {
   forceLogout()
-  toast.error('Сесія завершилась. Увійдіть знову.')
 })
 
 createRoot(document.getElementById('root')!).render(

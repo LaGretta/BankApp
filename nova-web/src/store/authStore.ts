@@ -10,15 +10,18 @@ export interface AuthUser {
   firstName: string
   lastName: string
   email: string
-  role: number
+  role: string
 }
 
 interface AuthState {
   token: string | null
   user: AuthUser | null
   isAuthed: boolean
+  sessionExpired: boolean // токен прострочився (для банера на логіні), НЕ ручний вихід
   setAuth: (res: AuthResponse) => void
   logout: () => void
+  expireSession: () => void
+  clearSessionExpired: () => void
 }
 
 /* --- відновлення сесії з localStorage при завантаженні --- */
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: initial.token,
   user: initial.user,
   isAuthed: !!initial.token,
+  sessionExpired: false,
 
   setAuth: (res) => {
     const user: AuthUser = {
@@ -52,18 +56,29 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem(TOKEN_KEY, res.token)
     localStorage.setItem(USER_KEY, JSON.stringify(user))
     setAuthToken(res.token)
-    set({ token: res.token, user, isAuthed: true })
+    set({ token: res.token, user, isAuthed: true, sessionExpired: false })
   },
 
+  // ручний вихід — без прапорця «сесія завершилась»
   logout: () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     setAuthToken(null)
-    set({ token: null, user: null, isAuthed: false })
+    set({ token: null, user: null, isAuthed: false, sessionExpired: false })
   },
+
+  // прострочення токена (401 на автентифікованому екрані) — з прапорцем для банера
+  expireSession: () => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    setAuthToken(null)
+    set({ token: null, user: null, isAuthed: false, sessionExpired: true })
+  },
+
+  clearSessionExpired: () => set({ sessionExpired: false }),
 }))
 
-/** Викликати з apiClient при 401. */
+/** Викликати з apiClient при 401 з дійсним токеном. */
 export function forceLogout() {
-  useAuthStore.getState().logout()
+  useAuthStore.getState().expireSession()
 }

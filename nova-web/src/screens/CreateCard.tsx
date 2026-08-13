@@ -12,8 +12,8 @@ import { RowSkeleton } from '../components/Skeleton'
 import { TopBar } from '../components/TopBar'
 import { useAsync } from '../hooks/useAsync'
 import { ApiError } from '../lib/apiClient'
+import { copyToClipboard } from '../lib/clipboard'
 import {
-  NUM_TO_CURRENCY,
   TIERS,
   TIER_LABEL,
   type CardTier,
@@ -64,13 +64,16 @@ export function CreateCard() {
 
   async function copyCvv() {
     if (!created) return
-    try {
-      await navigator.clipboard.writeText(created.cvv)
+    const ok = await copyToClipboard(created.cvv, 'CVV скопійовано')
+    if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch {
-      /* ignore */
     }
+  }
+
+  function copyNumber() {
+    if (!created) return
+    copyToClipboard(created.number.replace(/\s+/g, ''), 'Номер скопійовано')
   }
 
   return (
@@ -143,7 +146,7 @@ export function CreateCard() {
           </h2>
           <div className="surface" style={{ padding: '4px 14px' }}>
             {accounts.map((a, i) => {
-              const code = NUM_TO_CURRENCY[a.currency] ?? 'UAH'
+              const code = a.currency
               const isSel = effectiveAccountId === a.id
               return (
                 <div key={a.id}>
@@ -221,7 +224,10 @@ export function CreateCard() {
             <div className="surface" style={{ marginTop: 16, padding: '4px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 2px' }}>
                 <span className="t-label text-2">Номер картки</span>
-                <span className="mono num-value">{groupCardNumber(created.number)}</span>
+                <button onClick={copyNumber} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span className="mono num-value">{groupCardNumber(created.number)}</span>
+                  <Copy size={16} strokeWidth={1.9} color="var(--text-3)" />
+                </button>
               </div>
               <div className="hairline-top" />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 2px' }}>

@@ -1,13 +1,13 @@
 import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { CURRENCY_NAME, NUM_TO_CURRENCY } from '../lib/enums'
+import { CURRENCY_NAME } from '../lib/enums'
 import type { AccountResponse } from '../lib/types'
 import { Amount } from './Amount'
 import { FlagBadge } from './FlagBadge'
 
 export function AccountRow({ account }: { account: AccountResponse }) {
   const navigate = useNavigate()
-  const code = NUM_TO_CURRENCY[account.currency] ?? 'UAH'
+  const code = account.currency
   const cardCount = account.cards?.length ?? 0
 
   return (

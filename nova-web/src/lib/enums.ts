@@ -1,32 +1,22 @@
 /* ==========================================================================
-   Enum-мапи. ВАЖЛИВО: бекенд без JsonStringEnumConverter → enum'и по дроту
-   передаються ЧИСЛАМИ (і в запиті, і у відповіді). Тут єдине джерело правди.
-   Порядок значень = порядок оголошення в C# enum.
+   Enum-и. Бекенд тепер серіалізує enum РЯДКАМИ (JsonStringEnumConverter):
+   currency "UAH"/"USD"/"EUR", cardType "White"/"Black"/"Platinum",
+   transaction type "Transfer"/"TopUp"/..., status "Pending"/"Completed"/"Failed".
+   Тут — типи + людські підписи. Значення = рядок з бекенду напряму.
    ========================================================================== */
 
-/* ---- Currency: enum Currency { UAH, USD, EUR } ---- */
+/* ---- Currency ---- */
 export type CurrencyCode = 'UAH' | 'USD' | 'EUR'
-export const CURRENCY_TO_NUM: Record<CurrencyCode, number> = { UAH: 0, USD: 1, EUR: 2 }
-export const NUM_TO_CURRENCY: Record<number, CurrencyCode> = { 0: 'UAH', 1: 'USD', 2: 'EUR' }
-
-export const CURRENCY_SYMBOL: Record<CurrencyCode, string> = {
-  UAH: '₴',
-  USD: '$',
-  EUR: '€',
-}
+export const CURRENCIES: CurrencyCode[] = ['UAH', 'USD', 'EUR']
+export const CURRENCY_SYMBOL: Record<CurrencyCode, string> = { UAH: '₴', USD: '$', EUR: '€' }
 export const CURRENCY_NAME: Record<CurrencyCode, string> = {
   UAH: 'Гривня',
   USD: 'Долар',
   EUR: 'Євро',
 }
 
-/* ---- Card tier ----
-   УВАГА: у бекенді enum CardType ПОРОЖНІЙ. Ми шлемо числа 0/1/2, а бекенд
-   (System.Text.Json) допускає невизначені числові значення enum. Порядок —
-   наша домовленість: White=0, Black=1, Platinum=2. Див. README, розділ «Бекенд». */
+/* ---- Card tier ---- */
 export type CardTier = 'White' | 'Black' | 'Platinum'
-export const TIER_TO_NUM: Record<CardTier, number> = { White: 0, Black: 1, Platinum: 2 }
-export const NUM_TO_TIER: Record<number, CardTier> = { 0: 'White', 1: 'Black', 2: 'Platinum' }
 export const TIERS: CardTier[] = ['White', 'Black', 'Platinum']
 export const TIER_LABEL: Record<CardTier, string> = {
   White: 'Nova White',
@@ -34,14 +24,8 @@ export const TIER_LABEL: Record<CardTier, string> = {
   Platinum: 'Nova Platinum',
 }
 
-/* ---- TransactionType: { Transfer, TopUp, Payment, Withdrawal } ---- */
+/* ---- Transaction type ---- */
 export type TxType = 'Transfer' | 'TopUp' | 'Payment' | 'Withdrawal'
-export const NUM_TO_TXTYPE: Record<number, TxType> = {
-  0: 'Transfer',
-  1: 'TopUp',
-  2: 'Payment',
-  3: 'Withdrawal',
-}
 export const TXTYPE_LABEL: Record<TxType, string> = {
   Transfer: 'Переказ',
   TopUp: 'Поповнення',
@@ -49,15 +33,17 @@ export const TXTYPE_LABEL: Record<TxType, string> = {
   Withdrawal: 'Зняття',
 }
 
-/* ---- TransactionStatus: { Pending, Completed, Failed } ---- */
+/* ---- Transaction status ---- */
 export type TxStatus = 'Pending' | 'Completed' | 'Failed'
-export const NUM_TO_TXSTATUS: Record<number, TxStatus> = {
-  0: 'Pending',
-  1: 'Completed',
-  2: 'Failed',
-}
 export const TXSTATUS_LABEL: Record<TxStatus, string> = {
   Pending: 'В обробці',
   Completed: 'Виконано',
   Failed: 'Відхилено',
 }
+
+/* безпечні хелпери підписів (на випадок несподіваного значення з бекенду) */
+export const currencyName = (c: string) => CURRENCY_NAME[c as CurrencyCode] ?? c
+export const currencySymbol = (c: string) => CURRENCY_SYMBOL[c as CurrencyCode] ?? ''
+export const tierLabel = (t: string) => TIER_LABEL[t as CardTier] ?? t
+export const txTypeLabel = (t: string) => TXTYPE_LABEL[t as TxType] ?? t
+export const txStatusLabel = (s: string) => TXSTATUS_LABEL[s as TxStatus] ?? s

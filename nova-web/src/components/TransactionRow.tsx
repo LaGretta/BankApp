@@ -1,29 +1,38 @@
 import { ArrowDownLeft, ArrowUpRight, CreditCard, PlusCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { NUM_TO_TXTYPE, TXTYPE_LABEL } from '../lib/enums'
+import { TXTYPE_LABEL } from '../lib/enums'
 import { formatDateShort } from '../lib/format'
 import type { TransactionResponse } from '../lib/types'
 import { Amount } from './Amount'
 
-/** Напрям для відображення (евристика — глобальна історія без прив’язки до рахунку). */
-export function txDirection(tx: TransactionResponse): 'in' | 'out' {
-  const type = NUM_TO_TXTYPE[tx.type]
-  if (type === 'TopUp') return 'in'
-  if (type === 'Transfer') return tx.fromAccountId == null ? 'in' : 'out'
-  return 'out' // Payment / Withdrawal
+/**
+ * Напрям для відображення. Якщо передано myAccountIds — визначаємо за
+ * власністю рахунків (коректно і для вхідного transfer-by-card).
+ * Інакше — евристика за типом.
+ */
+export function txDirection(tx: TransactionResponse, myAccountIds?: Set<number>): 'in' | 'out' {
+  if (tx.type === 'TopUp') return 'in'
+  if (myAccountIds && myAccountIds.size) {
+    const toMine = tx.toAccountId != null && myAccountIds.has(tx.toAccountId)
+    const fromMine = tx.fromAccountId != null && myAccountIds.has(tx.fromAccountId)
+    if (toMine && !fromMine) return 'in'
+    if (fromMine && !toMine) return 'out'
+  }
+  if (tx.type === 'Transfer') return tx.fromAccountId == null ? 'in' : 'out'
+  return 'out'
 }
 
-const ICON = {
-  in: ArrowDownLeft,
-  out: ArrowUpRight,
-}
-
-export function TransactionRow({ tx }: { tx: TransactionResponse }) {
+export function TransactionRow({
+  tx,
+  myAccountIds,
+}: {
+  tx: TransactionResponse
+  myAccountIds?: Set<number>
+}) {
   const navigate = useNavigate()
-  const dir = txDirection(tx)
-  const type = NUM_TO_TXTYPE[tx.type]
-  const Icon = type === 'TopUp' ? PlusCircle : type === 'Payment' ? CreditCard : ICON[dir]
-  const isFailed = tx.status === 2
+  const dir = txDirection(tx, myAccountIds)
+  const Icon = tx.type === 'TopUp' ? PlusCircle : tx.type === 'Payment' ? CreditCard : dir === 'in' ? ArrowDownLeft : ArrowUpRight
+  const isFailed = tx.status === 'Failed'
 
   return (
     <button
@@ -65,21 +74,15 @@ export function TransactionRow({ tx }: { tx: TransactionResponse }) {
             whiteSpace: 'nowrap',
           }}
         >
-          {tx.description?.trim() || TXTYPE_LABEL[type]}
+          {tx.description?.trim() || TXTYPE_LABEL[tx.type] || tx.type}
         </div>
         <div className="t-caption text-3" style={{ marginTop: 2 }}>
-          {TXTYPE_LABEL[type]} · {formatDateShort(tx.createdAt)}
+          {(TXTYPE_LABEL[tx.type] ?? tx.type)} · {formatDateShort(tx.createdAt)}
         </div>
       </div>
 
       <div style={{ textAlign: 'right', opacity: isFailed ? 0.5 : 1 }}>
-        <Amount
-          value={tx.amount}
-          currency={tx.currency}
-          direction={dir}
-          size={15}
-          positiveColor
-        />
+        <Amount value={tx.amount} currency={tx.currency} direction={dir} size={15} positiveColor />
         {isFailed && (
           <div className="t-caption" style={{ color: 'var(--negative)', marginTop: 1 }}>
             Відхилено

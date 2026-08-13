@@ -1,5 +1,5 @@
 import { api } from '../lib/apiClient'
-import { CURRENCY_TO_NUM, type CurrencyCode } from '../lib/enums'
+import type { CurrencyCode } from '../lib/enums'
 import type { AccountResponse } from '../lib/types'
 
 export function getAccounts() {
@@ -11,6 +11,6 @@ export function getAccount(id: number) {
 }
 
 export function createAccount(currency: CurrencyCode) {
-  // enum по дроту — числом (бекенд без JsonStringEnumConverter)
-  return api.post<AccountResponse>('/api/accounts', { currency: CURRENCY_TO_NUM[currency] })
+  // enum рядком (бекенд з JsonStringEnumConverter)
+  return api.post<AccountResponse>('/api/accounts', { currency })
 }
