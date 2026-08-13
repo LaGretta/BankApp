@@ -1,0 +1,53 @@
+/* ==========================================================================
+   NOVA — design tokens (з NOVA_HANDOFF.md). Dark — єдина тема.
+   ========================================================================== */
+:root,
+[data-theme='dark'] {
+  /* base — greyscale (slightly warm black) */
+  --bg: #050506;
+  --s1: #101013; /* surface 1 */
+  --s2: #16161a; /* surface 2 */
+  --s3: #1e1e22; /* surface 3 / raised */
+  --phone-bg: linear-gradient(178deg, #131210, #0a0a0c); /* warm app base */
+
+  /* text */
+  --text-1: #f4f5f7; /* primary   */
+  --text-2: #8a8d96; /* secondary */
+  --text-3: #55585f; /* tertiary  */
+
+  /* lines */
+  --hairline: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.16);
+
+  /* brand — 2 only, used sparingly */
+  --accent: #7fe6d6; /* turquoise-white */
+  --accent-soft: rgba(127, 230, 214, 0.14);
+  --sheen: rgba(150, 238, 226, 0.55); /* iridescent highlight */
+  --positive: #6fd8ae; /* income only, small */
+  --negative: #e0808f; /* destructive / rejected */
+
+  /* elevation / shadow */
+  --e1: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --e2: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --e3: 0 20px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --lit: 0 0 60px rgba(127, 230, 214, 0.06); /* "alive" glow (balance card) */
+  --phone-shadow: 0 40px 90px rgba(0, 0, 0, 0.7);
+
+  /* radii */
+  --r-field: 14px;
+  --r-tile: 18px;
+  --r-card: 24px;
+  --r-nav: 12px;
+  --r-pill: 999px;
+  --r-icon: 22.5%;
+
+  /* fonts */
+  --font-ui: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* layout */
+  --app-max: 460px;
+  --nav-h: 68px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

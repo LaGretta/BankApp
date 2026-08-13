@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A1B20"/>
+      <stop offset="1" stop-color="#08080B"/>
+    </linearGradient>
+    <radialGradient id="drop" cx="0.34" cy="0.22" r="0.85">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.38" stop-color="#D2ECE7"/>
+      <stop offset="0.74" stop-color="#93C4D2"/>
+      <stop offset="1" stop-color="#5E828F"/>
+    </radialGradient>
+    <radialGradient id="innerShade" cx="0.5" cy="1" r="0.9">
+      <stop offset="0" stop-color="#28464F" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="#28464F" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="42"/>
+    </filter>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#tile)"/>
+  <rect x="1" y="1" width="1022" height="1022" rx="230" ry="230" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="2"/>
+
+  <g transform="rotate(-8 512 512)">
+    <!-- turquoise glow -->
+    <ellipse cx="512" cy="589.42" rx="232.26" ry="188.02" fill="#7FE6D6" opacity="0.42" filter="url(#glow)"/>
+    <!-- droplet body (asymmetric rounded = liquid) -->
+    <path d="M 512 235.5
+             C 711.0799999999999 235.5, 788.5 323.98, 788.5 523.06
+             C 788.5 700.02, 688.96 788.5, 500.94 788.5
+             C 323.98 788.5, 235.5 688.96, 235.5 500.94
+             C 235.5 323.98, 323.98 235.5, 512 235.5 Z"
+          fill="url(#drop)"/>
+    <path d="M 512 235.5
+             C 711.0799999999999 235.5, 788.5 323.98, 788.5 523.06
+             C 788.5 700.02, 688.96 788.5, 500.94 788.5
+             C 323.98 788.5, 235.5 688.96, 235.5 500.94
+             C 235.5 323.98, 323.98 235.5, 512 235.5 Z"
+          fill="url(#innerShade)"/>
+    <!-- top highlight -->
+    <ellipse cx="434.58" cy="379.28" rx="110.60000000000001" ry="66.36" fill="#FFFFFF" opacity="0.9" filter="url(#soft)"/>
+  </g>
+</svg>

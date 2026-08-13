@@ -1,0 +1,328 @@
+/* ==========================================================================
+   NOVA — global styles, keyframes, iridescent material.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+
+input::placeholder {
+  color: var(--text-3);
+}
+
+/* thin monochrome scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--s3);
+  border-radius: 999px;
+}
+
+/* ------- app shell (no device chrome — just the app itself) ------- */
+.app-root {
+  min-height: 100%;
+  background: var(--phone-bg);
+  display: flex;
+  justify-content: center;
+}
+
+.app-frame {
+  width: 100%;
+  max-width: var(--app-max);
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--phone-bg);
+  overflow: hidden;
+}
+
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--safe-top) + 14px) 18px calc(var(--nav-h) + var(--safe-bottom) + 24px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-scroll.no-nav {
+  padding-bottom: calc(var(--safe-bottom) + 24px);
+}
+
+/* ------------------------- typography helpers ------------------------- */
+.t-display { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+.t-h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.t-title { font-size: 17px; font-weight: 600; }
+.t-body { font-size: 15px; font-weight: 400; }
+.t-label { font-size: 13px; font-weight: 500; }
+.t-caption { font-size: 11px; font-weight: 500; }
+
+.mono { font-family: var(--font-mono); }
+.mono-cap {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.num-balance { font-family: var(--font-mono); font-size: 35px; font-weight: 700; letter-spacing: -0.02em; }
+.num-amount { font-family: var(--font-mono); font-size: 24px; font-weight: 700; }
+.num-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+.num-card { font-family: var(--font-mono); font-size: 18px; font-weight: 500; letter-spacing: 0.1em; }
+
+.text-2 { color: var(--text-2); }
+.text-3 { color: var(--text-3); }
+.dim { color: var(--text-3); }
+
+/* ------------------------- surfaces ------------------------- */
+.surface {
+  background: linear-gradient(160deg, #161619, #0f0f12);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-tile);
+  box-shadow: var(--e2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.hairline-top {
+  border-top: 1px solid var(--hairline);
+}
+
+/* =========================================================================
+   IRIDESCENT WHITE MATERIAL — the signature (одна реалізація на всі місця)
+   ========================================================================= */
+.control {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(160deg, #161619, #101013);
+  border: 1px solid var(--hairline);
+  color: #c4c7d0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    background 120ms ease-out,
+    color 120ms ease-out,
+    border-color 120ms ease-out,
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.control:hover:not(:disabled):not([data-on]) {
+  background: #1a1a1e;
+  border-color: var(--border);
+  color: var(--text-1);
+}
+
+.control:active:not(:disabled),
+.control[data-on] {
+  background: linear-gradient(180deg, #ffffff, #e7eaef);
+  color: #0a0a0c;
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(0.98);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 10px 34px rgba(127, 230, 214, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* content sits above the sheen/shimmer overlays */
+.control > .control-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.control .sheen {
+  position: absolute;
+  inset: -45%;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 32% 12%, var(--sheen), transparent 60%);
+  animation: breath 2600ms ease-in-out infinite;
+  opacity: 0;
+}
+.control[data-on] .sheen,
+.control:active:not(:disabled) .sheen {
+  opacity: 1;
+}
+
+.control .shimmer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: aishimmer 1800ms ease-in-out infinite;
+  opacity: 0;
+}
+.control[data-pressing] .shimmer {
+  opacity: 1;
+}
+
+/* ACTIVE NAV — material baked behind the icon */
+.nav-active {
+  background:
+    radial-gradient(70% 60% at 38% 5%, var(--sheen), transparent 62%),
+    linear-gradient(180deg, #ffffff, #e4e8ee);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 6px 18px rgba(127, 230, 214, 0.35);
+  color: #0a0a0c;
+}
+
+/* ------------------------- skeleton ------------------------- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--s2);
+  border-radius: 10px;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  background-size: 200% 100%;
+  animation: skel 1600ms linear infinite;
+}
+
+/* ------------------------- keyframes ------------------------- */
+@keyframes breath {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
+}
+@keyframes aishimmer {
+  0% { transform: translateX(-130%) skewX(-14deg); }
+  100% { transform: translateX(240%) skewX(-14deg); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes nova-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes nova-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ring {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes sparkle {
+  0%, 100% { transform: scale(0.5) rotate(0); opacity: 0.2; }
+  50% { transform: scale(1) rotate(90deg); opacity: 0.9; }
+}
+@keyframes nova-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+@keyframes nova-blink {
+  0%, 42%, 58%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
+}
+@keyframes skel {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.screen-enter {
+  animation: screen-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fade-enter {
+  animation: fade-in 280ms ease-out;
+}
+
+/* ------------------------- reduced motion ------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .screen-enter,
+  .fade-enter {
+    animation: fade-in 200ms ease-out;
+  }
+  .control .sheen { opacity: 0.5; }
+}
