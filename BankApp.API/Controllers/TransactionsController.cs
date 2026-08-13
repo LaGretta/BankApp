@@ -44,6 +44,16 @@ public class TransactionsController : ControllerBase
         var result = await _transactionService.GetTransactionById(GetUserId(), id, ct);
         return Ok(result);
     }
+    [HttpPost("transfer-by-card")]
+    public async Task<IActionResult> TransferByCard([FromBody] TransferByCardDto dto, CancellationToken ct)
+    {
+        var result = await _transactionService.TransferByCard(GetUserId(), dto, ct);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    
+    
+    
 
     private int GetUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

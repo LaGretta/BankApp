@@ -1,6 +1,6 @@
-﻿using System.Transactions;
-using AutoMapper;
+﻿using AutoMapper;
 using BankApp.Application.DTO;
+using BankApp.Domain.Entities;
 
 namespace BankApp.Application.Mapping;
 

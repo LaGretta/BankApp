@@ -95,4 +95,12 @@ public class CardService : ICardService
         _logger.LogWarning("Card blocked: {CardId}", id);
         return _mapper.Map<CardResponseDto>(getcard);
     }
+
+    public async Task<string> GetCardCvv(int userId, int cardId, CancellationToken ct)
+    {
+        var getcard = await _cardRepository.GetCardByIdAsync(userId, cardId, ct);
+        if (getcard == null)
+            throw new KeyNotFoundException("Card not found");
+        return getcard.Cvv;
+    }
 }

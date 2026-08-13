@@ -35,6 +35,12 @@ public class CardsController : ControllerBase
         var card = await _cardService.BlockCard(GetUserId(), id, ct);
         return Ok(card);
     }
+    [HttpGet("{id:int}/cvv")]
+    public async Task<IActionResult> GetCvv(int id, CancellationToken ct)
+    {
+        var cvv = await _cardService.GetCardCvv(GetUserId(), id, ct);
+        return Ok(new { cvv });
+    }
 
     private int GetUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

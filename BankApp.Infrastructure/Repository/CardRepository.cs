@@ -21,7 +21,9 @@ public class CardRepository : ICardRepository
 
     public async Task<Card?> GetCardByIdAsync(int userId, int cardId, CancellationToken ct)
     {
-        var find = await _dbContext.Cards.FirstOrDefaultAsync(n => n.Id == cardId, ct);
+        var find = await _dbContext.Cards
+            .Include(c => c.Account)
+            .FirstOrDefaultAsync(c => c.Id == cardId && c.Account.UserId == userId, ct);
         return find;
     }
 
@@ -38,7 +40,9 @@ public class CardRepository : ICardRepository
 
     public async Task<Card?> GetByNumberAsync(string number, CancellationToken ct)
     {
-        var find = await _dbContext.Cards.FirstOrDefaultAsync(a => a.Number == number, ct);
+        var find = await _dbContext.Cards
+            .Include(c => c.Account)
+            .FirstOrDefaultAsync(a => a.Number == number, ct);
         return find;
     }
 }

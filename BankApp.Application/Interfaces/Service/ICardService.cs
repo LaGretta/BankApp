@@ -7,4 +7,5 @@ public interface ICardService
     Task<CardCreatedDto> CreateCard(int userId, CreateCardDto dto, CancellationToken ct);
     Task<CardResponseDto> GetCardById(int userId, int id, CancellationToken ct);
     Task<CardResponseDto> BlockCard(int userId, int id, CancellationToken ct);
+    Task<string> GetCardCvv(int userId, int cardId, CancellationToken ct);
 }
