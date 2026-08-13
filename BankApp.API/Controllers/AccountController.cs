@@ -1,10 +1,12 @@
 ﻿using System.Security.Claims;
 using BankApp.Application.DTO;
 using BankApp.Application.Interfaces.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BankApp.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/accounts")]
 public class AccountController : ControllerBase
