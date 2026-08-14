@@ -63,6 +63,27 @@ export interface Paged<T> {
   totalPages: number
 }
 
+/* ---- Jars (Накопичення) ---- */
+export interface JarResponse {
+  id: number
+  accountId: number
+  name: string
+  iconKey: string
+  targetAmount: number
+  currentAmount: number
+  currency: CurrencyCode
+  targetDate: string | null
+  isClosed: boolean
+  createdAt: string
+}
+
+export interface JarTransaction {
+  id: number
+  amount: number
+  type: 'Deposit' | 'Withdraw'
+  createdAt: string
+}
+
 /* ASP.NET ProblemDetails */
 export interface ProblemDetails {
   type?: string

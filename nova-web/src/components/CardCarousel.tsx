@@ -34,6 +34,7 @@ export function CardCarousel({
 
   const dragging = useRef(false)
   const moved = useRef(false)
+  const captured = useRef(false)
   const startX = useRef(0)
   const startScroll = useRef(0)
 
@@ -69,34 +70,55 @@ export function CardCarousel({
 
   // drag мишею (тач — нативний скрол)
   const onPointerDown = (e: ReactPointerEvent) => {
+    // скидаємо для БУДЬ-ЯКОГО типу вказівника, щоб тач-тап не з'їдався
+    // застряглим станом від попереднього drag мишею
+    moved.current = false
+    captured.current = false
     if (e.pointerType !== 'mouse') return
     const el = ref.current
     if (!el) return
     dragging.current = true
-    moved.current = false
     startX.current = e.clientX
     startScroll.current = el.scrollLeft
-    el.setPointerCapture?.(e.pointerId)
+    // ВАЖЛИВО: НЕ захоплюємо вказівник тут — інакше подальший click піде в
+    // каруселю, а не в грань картки, і переворот не спрацює. Захоплюємо лише
+    // коли реально почався drag (див. onPointerMove).
   }
   const onPointerMove = (e: ReactPointerEvent) => {
     if (!dragging.current) return
     const el = ref.current
     if (!el) return
     const dx = e.clientX - startX.current
-    if (Math.abs(dx) > 4) moved.current = true
-    el.scrollLeft = startScroll.current - dx
+    if (!moved.current && Math.abs(dx) > 5) {
+      moved.current = true
+      // захоплюємо лише коли це справді drag (щоб продовжувати поза елементом)
+      try {
+        el.setPointerCapture(e.pointerId)
+        captured.current = true
+      } catch {
+        /* ignore */
+      }
+    }
+    if (moved.current) el.scrollLeft = startScroll.current - dx
   }
-  const endDrag = () => {
+  const endDrag = (e: ReactPointerEvent) => {
     if (!dragging.current) return
     dragging.current = false
     const el = ref.current
-    if (!el) return
-    if (moved.current) {
+    if (el && captured.current) {
+      try {
+        el.releasePointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+    }
+    captured.current = false
+    if (el && moved.current) {
       const i = clamp(Math.round(el.scrollLeft / STEP), n)
       el.scrollTo({ left: i * STEP, behavior: 'smooth' })
     }
   }
-  // після drag — гасимо клік (щоб картка не перевернулась)
+  // після справжнього drag — гасимо клік (щоб картка не перевернулась)
   const onClickCapture = (e: ReactMouseEvent) => {
     if (moved.current) {
       e.stopPropagation()

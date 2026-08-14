@@ -14,6 +14,9 @@ import { Transfer } from './screens/Transfer'
 import { TopUp } from './screens/TopUp'
 import { History } from './screens/History'
 import { TransactionDetail } from './screens/TransactionDetail'
+import { Savings } from './screens/Savings'
+import { CreateJar } from './screens/CreateJar'
+import { JarDetail } from './screens/JarDetail'
 import type { JSX } from 'react'
 
 function Protected({ children, nav = true }: { children: JSX.Element; nav?: boolean }) {
@@ -44,6 +47,10 @@ export default function App() {
         <Route path="/topup" element={<Protected nav={false}><TopUp /></Protected>} />
         <Route path="/history" element={<Protected><History /></Protected>} />
         <Route path="/transactions/:id" element={<Protected nav={false}><TransactionDetail /></Protected>} />
+
+        <Route path="/savings" element={<Protected><Savings /></Protected>} />
+        <Route path="/jars/new" element={<Protected nav={false}><CreateJar /></Protected>} />
+        <Route path="/jars/:id" element={<Protected nav={false}><JarDetail /></Protected>} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

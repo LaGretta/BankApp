@@ -1,10 +1,10 @@
-import { ArrowLeftRight, LayoutGrid, Receipt, Wallet } from 'lucide-react'
+import { ArrowLeftRight, LayoutGrid, Receipt, Target } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 
 const TABS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/dashboard', label: 'Головна', icon: LayoutGrid },
-  { to: '/accounts', label: 'Рахунки', icon: Wallet },
+  { to: '/savings', label: 'Накопичення', icon: Target },
   { to: '/transfer', label: 'Переказ', icon: ArrowLeftRight },
   { to: '/history', label: 'Історія', icon: Receipt },
 ]
