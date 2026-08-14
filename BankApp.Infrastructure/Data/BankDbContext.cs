@@ -11,6 +11,8 @@ public class BankDbContext : DbContext
     public DbSet<Account> Accounts { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Card> Cards { get; set; }
+    public DbSet<SavingsJar> SavingsJars { get; set; }
+    public DbSet<JarTransaction> JarTransactions { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,5 +59,33 @@ public class BankDbContext : DbContext
             .WithMany(u => u.Accounts)
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        
+        modelBuilder.Entity<SavingsJar>(e =>
+        {
+            e.Property(x => x.TargetAmount).HasPrecision(18, 2);
+            e.Property(x => x.CurrentAmount).HasPrecision(18, 2);
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<JarTransaction>(e =>
+        {
+            e.HasIndex(x => x.IdempotencyKey).IsUnique();
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+
+            e.HasOne(x => x.Jar)
+                .WithMany()
+                .HasForeignKey(x => x.JarId)
+                .OnDelete(DeleteBehavior.Restrict);   
+        });
     }
 }

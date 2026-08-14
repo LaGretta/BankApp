@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICardService, CardService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ISavingsJarService, SavingsJarService>();
 
         services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
