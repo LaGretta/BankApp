@@ -5,6 +5,7 @@ using BankApp.Application.Interfaces.Security;
 using BankApp.Application.Interfaces.Service;
 using BankApp.Domain.Entities;
 using BankApp.Domain.Enums;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace BankApp.Application.Service;
@@ -17,6 +18,8 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly ILogger<AuthService> _logger;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IConfiguration _configuration;
     
     public AuthService(
         IAuthRepository authRepository
@@ -24,7 +27,9 @@ public class AuthService : IAuthService
         , IMapper mapper
         , IPasswordHasher passwordHasher
         , IJwtTokenGenerator jwtTokenGenerator
-        , ILogger<AuthService> logger)
+        , ILogger<AuthService> logger
+        , IRefreshTokenRepository refreshTokenRepository
+        , IConfiguration configuration)
     {
         _authRepository = authRepository;
         _unitOfWork = unitOfWork;
@@ -32,6 +37,8 @@ public class AuthService : IAuthService
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
         _logger = logger;
+        _refreshTokenRepository = refreshTokenRepository;
+        _configuration = configuration;
     }
 
     public async Task<AuthResponseDto> Register(RegisterDto registerDto, CancellationToken ct)
@@ -53,9 +60,7 @@ public class AuthService : IAuthService
         await _unitOfWork.SaveChangesAsync(ct);
         _logger.LogInformation("New user registered: {Email}", user.Email);
         
-        var response = _mapper.Map<AuthResponseDto>(user);
-        response.Token = _jwtTokenGenerator.GenerateJwtToken(user);
-        return response;
+        return await BuildAuthResponse(user, ct);
     }
     public async Task<AuthResponseDto> Login(LoginDto loginDto, CancellationToken ct)
     {
@@ -67,8 +72,52 @@ public class AuthService : IAuthService
         }
         
         _logger.LogInformation("User logged in: {Email}", find.Email);
-        var response = _mapper.Map<AuthResponseDto>(find);
-        response.Token = _jwtTokenGenerator.GenerateJwtToken(find);
+        return await BuildAuthResponse(find, ct);
+    }
+    private async Task<AuthResponseDto> BuildAuthResponse(User user, CancellationToken ct)
+    {
+        var response = _mapper.Map<AuthResponseDto>(user);
+        response.Token = _jwtTokenGenerator.GenerateJwtToken(user);
+
+        var refresh = new RefreshToken
+        {
+            Token = _jwtTokenGenerator.GenerateRefreshToken(),
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(
+                int.Parse(_configuration["Jwt:RefreshTokenDays"]!)),
+            IsRevoked = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _refreshTokenRepository.AddAsync(refresh, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        response.RefreshToken = refresh.Token;
         return response;
+    }
+    public async Task<AuthResponseDto> Refresh(RefreshRequestDto dto, CancellationToken ct)
+    {
+        var stored = await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, ct);
+
+        if (stored == null || stored.IsRevoked || stored.ExpiresAt < DateTime.UtcNow)
+            throw new UnauthorizedAccessException("Invalid refresh token");
+
+        var user = await _authRepository.GetByIdAsync(stored.UserId, ct);
+        if (user == null)
+            throw new UnauthorizedAccessException("Invalid refresh token");
+
+        stored.IsRevoked = true;
+
+        var response = await BuildAuthResponse(user, ct);
+        return response;
+    }
+    public async Task Logout(RefreshRequestDto dto, CancellationToken ct)
+    {
+        var stored = await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, ct);
+        if (stored != null && !stored.IsRevoked)
+        {
+            stored.IsRevoked = true;
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
     }
 }

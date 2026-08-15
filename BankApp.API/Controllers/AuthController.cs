@@ -26,4 +26,17 @@ public class AuthController : ControllerBase
         var result = await _authService.Login(dto, ct);
         return Ok(result);
     }
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto dto, CancellationToken ct)
+    {
+        var result = await _authService.Refresh(dto, ct);
+        return Ok(result);
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto, CancellationToken ct)
+    {
+        await _authService.Logout(dto, ct);
+        return NoContent();
+    }
 }

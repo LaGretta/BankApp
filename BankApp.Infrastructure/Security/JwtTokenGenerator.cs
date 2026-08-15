@@ -31,10 +31,18 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         (
             issuer:_configuration["Jwt:Issuer"],
             audience:_configuration["Jwt:Audience"],
-            expires: DateTime.UtcNow.AddHours(3),
+            expires: DateTime.UtcNow.AddMinutes(
+                int.Parse(_configuration["Jwt:AccessTokenMinutes"]!)),
             claims: claims,
             signingCredentials: cred
         );
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+    public string GenerateRefreshToken()
+    {
+        var bytes = new byte[64];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        return Convert.ToBase64String(bytes);
     }
 }

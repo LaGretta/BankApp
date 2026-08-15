@@ -13,6 +13,7 @@ public class BankDbContext : DbContext
     public DbSet<Card> Cards { get; set; }
     public DbSet<SavingsJar> SavingsJars { get; set; }
     public DbSet<JarTransaction> JarTransactions { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -96,6 +97,16 @@ public class BankDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.JarId)
                 .OnDelete(DeleteBehavior.Restrict);   
+        });
+        
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.HasIndex(x => x.Token).IsUnique();
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -23,4 +23,5 @@ public class AuthResponseDto
     public Role Role { get; set; }
     public DateTime CreatedAt { get; set; } 
     public string Token { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
 }
