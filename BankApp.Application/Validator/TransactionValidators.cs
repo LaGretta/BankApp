@@ -7,13 +7,10 @@ public class TransferDtoValidator : AbstractValidator<TransferDto>
 {
     public TransferDtoValidator()
     {
-        RuleFor(x => x.FromAccountId).GreaterThan(0);
+        RuleFor(x => x.FromCardId).GreaterThan(0);   
         RuleFor(x => x.ToAccountId).GreaterThan(0);
         RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Amount must be positive");
         RuleFor(x => x.IdempotencyKey).NotEmpty();
-        RuleFor(x => x)
-            .Must(x => x.FromAccountId != x.ToAccountId)
-            .WithMessage("Cannot transfer to the same account");
     }
 }
 public class TopUpDtoValidator : AbstractValidator<TopUpDto>
@@ -29,7 +26,7 @@ public class TransferByCardDtoValidator : AbstractValidator<TransferByCardDto>
 {
     public TransferByCardDtoValidator()
     {
-        RuleFor(x => x.FromAccountId).GreaterThan(0);
+        RuleFor(x => x.FromCardId).GreaterThan(0);   
         RuleFor(x => x.CardNumber).NotEmpty().Length(16).WithMessage("Invalid card number");
         RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Amount must be positive");
         RuleFor(x => x.IdempotencyKey).NotEmpty();

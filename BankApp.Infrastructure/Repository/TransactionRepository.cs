@@ -1,5 +1,6 @@
 ﻿using BankApp.Application.Interfaces.Repository;
 using BankApp.Domain.Entities;
+using BankApp.Domain.Enums;
 using BankApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -48,4 +49,17 @@ public class TransactionRepository : ITransactionRepository
                                       && ((t.FromAccount != null && t.FromAccount.UserId == userId)
                                           || (t.ToAccount != null && t.ToAccount.UserId == userId)), ct);
     }
+    
+    public async Task<decimal> GetTodaySpentByCardAsync(int cardId, CancellationToken ct)
+    {
+        var today = DateTime.UtcNow.Date;
+        return await _dbContext.Transactions
+            .Where(t => t.CardId == cardId
+                        && t.Type == TransactionType.Transfer
+                        && t.CreatedAt >= today)
+            .SumAsync(t => t.Amount, ct);
+    }
+    
+    
+    
 }

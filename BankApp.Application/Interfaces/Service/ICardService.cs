@@ -8,4 +8,6 @@ public interface ICardService
     Task<CardResponseDto> GetCardById(int userId, int id, CancellationToken ct);
     Task<CardResponseDto> BlockCard(int userId, int id, CancellationToken ct);
     Task<string> GetCardCvv(int userId, int cardId, CancellationToken ct);
+    Task<CardResponseDto> SetDailyLimit(int userId, int cardId, decimal? dailyLimit, CancellationToken ct);
+    Task<decimal> GetSpentToday(int userId, int cardId, CancellationToken ct);
 }

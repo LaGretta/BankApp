@@ -29,73 +29,75 @@ interface MyCard {
 export function Transfer() {
   const navigate = useNavigate()
   const location = useLocation()
-  const preset = (location.state as { fromAccountId?: number; fromCardId?: number } | null) ?? null
+  const preset = (location.state as { fromCardId?: number } | null) ?? null
 
   const { data, loading } = useAsync(() => getAccounts(), [])
   const accounts = useMemo(() => data ?? [], [data])
-  const myCards: MyCard[] = useMemo(
-    () => accounts.flatMap((acc) => acc.cards.map((card) => ({ card, account: acc }))),
+  // джерело переказу — лише АКТИВНІ картки (бекенд відхиляє заблоковані)
+  const activeCards: MyCard[] = useMemo(
+    () =>
+      accounts.flatMap((acc) => acc.cards.filter((c) => c.isActive).map((card) => ({ card, account: acc }))),
     [accounts],
   )
 
   const [mode, setMode] = useState<Mode>('card')
   const [fromCardId, setFromCardId] = useState<number | null>(preset?.fromCardId ?? null)
   const [recipient, setRecipient] = useState('')
+  const [toAccountId, setToAccountId] = useState<number | null>(null)
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
-
-  // own-mode
-  const [ownFromId, setOwnFromId] = useState<number | null>(preset?.fromAccountId ?? null)
-  const [ownToId, setOwnToId] = useState<number | null>(null)
 
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const idemKey = useRef(newGuid())
 
-  // авто-вибір
+  // авто-вибір джерела: preset-картка (якщо активна) або перша активна
   useEffect(() => {
-    if (fromCardId === null && myCards.length) setFromCardId(myCards[0].card.id)
-    if (ownFromId === null && accounts.length) setOwnFromId(accounts[0].id)
-  }, [myCards, accounts, fromCardId, ownFromId])
+    if (!activeCards.length) return
+    const presetOk = activeCards.some((m) => m.card.id === fromCardId)
+    if (!presetOk) setFromCardId(activeCards[0].card.id)
+  }, [activeCards, fromCardId])
 
-  // новий idem-ключ на зміну параметрів операції; ретрай тих самих → той самий ключ
+  // новий idem-ключ на зміну параметрів; ретрай тих самих → той самий ключ
   useEffect(() => {
     idemKey.current = newGuid()
-  }, [mode, fromCardId, recipient, amount, description, ownFromId, ownToId])
+  }, [mode, fromCardId, recipient, toAccountId, amount, description])
 
-  const fromCard = myCards.find((m) => m.card.id === fromCardId) ?? myCards[0] ?? null
-  const ownFrom = accounts.find((a) => a.id === ownFromId) ?? null
-  const ownTargets = accounts.filter((a) => ownFrom && a.currency === ownFrom.currency && a.id !== ownFrom.id)
+  const fromCard = activeCards.find((m) => m.card.id === fromCardId) ?? activeCards[0] ?? null
+  const currency = fromCard?.account.currency
+  const symbol = currency ? CURRENCY_SYMBOL[currency] : ''
+
+  // призначення «між своїми» — мій інший рахунок тієї ж валюти (не рахунок картки-джерела)
+  const ownTargets = accounts.filter(
+    (a) => fromCard && a.currency === fromCard.account.currency && a.id !== fromCard.account.id,
+  )
 
   const amountNum = Number(amount.replace(',', '.'))
   const recipientDigits = recipient.replace(/\s/g, '')
-
-  const cardCurrency = fromCard?.account.currency
-  const ownCurrency = ownFrom?.currency
-  const activeCurrency = mode === 'card' ? cardCurrency : ownCurrency
-  const activeBalance = mode === 'card' ? fromCard?.account.balance : ownFrom?.balance
-
+  const balance = fromCard?.account.balance
   const validAmount = amountNum > 0
-  const enough = activeBalance != null ? amountNum <= activeBalance : false
+  const enough = balance != null ? amountNum <= balance : false
+
   const canCard = !!fromCard && recipientDigits.length === 16 && validAmount && enough
-  const canOwn = !!ownFrom && ownToId != null && validAmount && enough
+  const canOwn = !!fromCard && toAccountId != null && validAmount && enough
   const canSubmit = mode === 'card' ? canCard : canOwn
 
   async function submit() {
+    if (!fromCard) return
     setBusy(true)
     try {
-      if (mode === 'card' && fromCard) {
+      if (mode === 'card') {
         await transferByCard({
-          fromAccountId: fromCard.account.id,
+          fromCardId: fromCard.card.id,
           cardNumber: recipientDigits,
           amount: amountNum,
           description: description.trim(),
           idempotencyKey: idemKey.current,
         })
-      } else if (mode === 'own' && ownFrom && ownToId) {
+      } else if (toAccountId != null) {
         await transfer({
-          fromAccountId: ownFrom.id,
-          toAccountId: ownToId,
+          fromCardId: fromCard.card.id,
+          toAccountId,
           amount: amountNum,
           description: description.trim(),
           idempotencyKey: idemKey.current,
@@ -132,7 +134,18 @@ export function Transfer() {
     )
   }
 
-  const symbol = activeCurrency ? CURRENCY_SYMBOL[activeCurrency] : ''
+  if (activeCards.length === 0) {
+    return (
+      <div>
+        <TopBar back title="Переказ" />
+        <EmptyState
+          title="Немає активної картки"
+          subtitle="Списання йде з картки. Випустіть або розблокуйте картку, щоб робити перекази."
+          action={<Button fullWidth onClick={() => navigate('/cards/new')}>Випустити картку</Button>}
+        />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -148,72 +161,50 @@ export function Transfer() {
         </ModeTab>
       </div>
 
-      {mode === 'card' ? (
-        myCards.length === 0 ? (
-          <EmptyState
-            title="Немає карток"
-            subtitle="Випустіть картку, щоб надсилати кошти за номером картки."
-            action={<Button fullWidth onClick={() => navigate('/cards/new')}>Випустити картку</Button>}
-          />
-        ) : (
-          <>
-            {/* recipient card number */}
-            <Field
-              label="Номер картки отримувача"
-              placeholder="0000 0000 0000 0000"
-              inputMode="numeric"
-              icon={<CreditCard size={18} strokeWidth={1.9} />}
-              value={recipient}
-              onChange={(e) => {
-                const d = e.target.value.replace(/\D/g, '').slice(0, 16)
-                setRecipient(d.replace(/(.{4})/g, '$1 ').trim())
-              }}
-              error={recipient !== '' && recipientDigits.length !== 16 ? '16 цифр номера картки' : undefined}
-            />
+      {/* source card (both modes) */}
+      <p className="mono-cap" style={{ margin: '0 4px 10px' }}>Списати з картки</p>
+      <div className="surface" style={{ padding: '4px 14px' }}>
+        {activeCards.map((m, i) => (
+          <div key={m.card.id}>
+            {i > 0 && <div className="hairline-top" />}
+            <CardPickRow m={m} selected={fromCard?.card.id === m.card.id} onSelect={() => { setFromCardId(m.card.id); setToAccountId(null) }} />
+          </div>
+        ))}
+      </div>
 
-            {/* from card picker */}
-            <p className="mono-cap" style={{ margin: '18px 4px 10px' }}>Списати з картки</p>
-            <div className="surface" style={{ padding: '4px 14px' }}>
-              {myCards.map((m, i) => (
-                <div key={m.card.id}>
-                  {i > 0 && <div className="hairline-top" />}
-                  <CardPickRow m={m} selected={fromCard?.card.id === m.card.id} onSelect={() => setFromCardId(m.card.id)} />
-                </div>
-              ))}
-            </div>
-          </>
-        )
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
+        <span style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', background: 'var(--s1)' }}>
+          <ArrowDown size={17} strokeWidth={1.9} />
+        </span>
+      </div>
+
+      {/* destination */}
+      {mode === 'card' ? (
+        <Field
+          label="Номер картки отримувача"
+          placeholder="0000 0000 0000 0000"
+          inputMode="numeric"
+          icon={<CreditCard size={18} strokeWidth={1.9} />}
+          value={recipient}
+          onChange={(e) => {
+            const d = e.target.value.replace(/\D/g, '').slice(0, 16)
+            setRecipient(d.replace(/(.{4})/g, '$1 ').trim())
+          }}
+          error={recipient !== '' && recipientDigits.length !== 16 ? '16 цифр номера картки' : undefined}
+        />
       ) : (
         <>
-          {/* own: from */}
-          <p className="mono-cap" style={{ margin: '0 4px 10px' }}>Звідки</p>
-          <div className="surface" style={{ padding: '4px 14px' }}>
-            {accounts.map((a, i) => (
-              <div key={a.id}>
-                {i > 0 && <div className="hairline-top" />}
-                <AccountPickRow account={a} selected={ownFromId === a.id} onSelect={() => { setOwnFromId(a.id); setOwnToId(null) }} showBalance />
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
-            <span style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', background: 'var(--s1)' }}>
-              <ArrowDown size={17} strokeWidth={1.9} />
-            </span>
-          </div>
-
-          {/* own: to */}
-          <p className="mono-cap" style={{ margin: '0 4px 10px' }}>Куди (той самий {ownCurrency})</p>
+          <p className="mono-cap" style={{ margin: '0 4px 10px' }}>На рахунок (той самий {currency})</p>
           {ownTargets.length === 0 ? (
             <div className="surface" style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>
-              <span className="t-label">Немає іншого рахунку у {ownCurrency}. Відкрийте ще один рахунок цієї валюти.</span>
+              <span className="t-label">Немає іншого рахунку у {currency}. Відкрийте ще один рахунок цієї валюти.</span>
             </div>
           ) : (
             <div className="surface" style={{ padding: '4px 14px' }}>
               {ownTargets.map((a, i) => (
                 <div key={a.id}>
                   {i > 0 && <div className="hairline-top" />}
-                  <AccountPickRow account={a} selected={ownToId === a.id} onSelect={() => setOwnToId(a.id)} />
+                  <AccountPickRow account={a} selected={toAccountId === a.id} onSelect={() => setToAccountId(a.id)} />
                 </div>
               ))}
             </div>
@@ -256,7 +247,7 @@ export function Transfer() {
           onDone={() =>
             navigate('/dashboard', {
               replace: true,
-              state: { focusAccountId: mode === 'card' ? fromCard?.account.id : ownFrom?.id },
+              state: { focusCardNumber: fromCard?.card.number.replace(/\s/g, '') },
             })
           }
         />
@@ -281,14 +272,14 @@ function CardPickRow({ m, selected, onSelect }: { m: MyCard; selected: boolean; 
   )
 }
 
-function AccountPickRow({ account, selected, onSelect, showBalance }: { account: AccountResponse; selected: boolean; onSelect: () => void; showBalance?: boolean }) {
+function AccountPickRow({ account, selected, onSelect }: { account: AccountResponse; selected: boolean; onSelect: () => void }) {
   return (
     <button onClick={onSelect} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 2px' }}>
       <FlagBadge currency={account.currency} size={38} />
       <span className="mono num-value" style={{ flex: 1, textAlign: 'left' }}>
         {account.currency} · №{String(account.id).padStart(8, '0')}
       </span>
-      {showBalance && <Amount value={account.balance} currency={account.currency} size={14} />}
+      <Amount value={account.balance} currency={account.currency} size={14} />
       <Radio on={selected} />
     </button>
   )

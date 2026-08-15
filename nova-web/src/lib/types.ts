@@ -19,6 +19,12 @@ export interface CardResponse {
   holderName: string
   expiryDate: string // ISO DateTime
   isActive: boolean
+  dailyLimit: number | null // денний ліміт витрат; null = без ліміту
+}
+
+/* GET /api/cards/{id}/spent-today */
+export interface CardSpentToday {
+  spentToday: number
 }
 
 /* Повертається ОДИН раз при створенні картки — містить CVV. */

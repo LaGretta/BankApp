@@ -39,7 +39,6 @@ export function Dashboard() {
   const [active, setActive] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [blockAsk, setBlockAsk] = useState(false)
-  const [limitsOpen, setLimitsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const accounts = accountsQ.data ?? []
@@ -193,7 +192,7 @@ export function Dashboard() {
               </>
             ) : (
               <>
-                <QuickAction icon={<Gauge size={20} strokeWidth={1.9} />} label="Ліміти" onClick={() => setLimitsOpen(true)} />
+                <QuickAction icon={<Gauge size={20} strokeWidth={1.9} />} label="Ліміти" onClick={() => activeCtx && navigate(`/cards/${activeCtx.card.id}/limit`)} />
                 <QuickAction
                   icon={<Ban size={20} strokeWidth={1.9} />}
                   label={activeCtx?.card.isActive ? 'Заблокувати' : 'Заблоковано'}
@@ -244,15 +243,6 @@ export function Dashboard() {
           </Button>
           <Button variant="ghost" fullWidth onClick={() => setBlockAsk(false)} disabled={busy}>Скасувати</Button>
         </div>
-      </Sheet>
-
-      {/* limits (no backend yet) */}
-      <Sheet open={limitsOpen} onClose={() => setLimitsOpen(false)}>
-        <h2 className="t-title" style={{ marginBottom: 6 }}>Ліміти картки</h2>
-        <p className="t-body text-2" style={{ marginBottom: 18 }}>
-          Керування лімітами зʼявиться незабаром. Наразі діють стандартні ліміти вашого тарифу.
-        </p>
-        <Button fullWidth onClick={() => setLimitsOpen(false)}>Зрозуміло</Button>
       </Sheet>
     </PullToRefresh>
   )

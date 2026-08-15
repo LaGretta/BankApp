@@ -35,11 +35,23 @@ public class CardsController : ControllerBase
         var card = await _cardService.BlockCard(GetUserId(), id, ct);
         return Ok(card);
     }
+    [HttpPatch("{id:int}/limit")]
+    public async Task<IActionResult> SetLimit(int id, [FromBody] SetLimitDto dto, CancellationToken ct)
+    {
+        var card = await _cardService.SetDailyLimit(GetUserId(), id, dto.DailyLimit, ct);
+        return Ok(card);
+    }
     [HttpGet("{id:int}/cvv")]
     public async Task<IActionResult> GetCvv(int id, CancellationToken ct)
     {
         var cvv = await _cardService.GetCardCvv(GetUserId(), id, ct);
         return Ok(new { cvv });
+    }
+    [HttpGet("{id:int}/spent-today")]
+    public async Task<IActionResult> GetSpentToday(int id, CancellationToken ct)
+    {
+        var spent = await _cardService.GetSpentToday(GetUserId(), id, ct);
+        return Ok(new { spentToday = spent });
     }
 
     private int GetUserId() =>

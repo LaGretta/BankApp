@@ -17,4 +17,5 @@ public class Card
     public DateTime ExpiryDate  { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
+    public decimal? DailyLimit { get; set; }
 }

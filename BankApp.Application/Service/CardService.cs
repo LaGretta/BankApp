@@ -17,6 +17,7 @@ public class CardService : ICardService
     private readonly IAccountRepository  _accountRepository;
     private readonly IAuthRepository _authRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionRepository _transactionRepository;
 
     public CardService(
         ICardRepository cardRepository
@@ -25,7 +26,8 @@ public class CardService : ICardService
         , ILogger<CardService> logger
         , IAccountRepository accountRepository
         , IAuthRepository authRepository
-        , IUnitOfWork unitOfWork)
+        , IUnitOfWork unitOfWork
+        , ITransactionRepository transactionRepository)
     {
         _cardRepository = cardRepository;
         _mapper = mapper;
@@ -34,6 +36,7 @@ public class CardService : ICardService
         _accountRepository = accountRepository;
         _authRepository = authRepository;
         _unitOfWork = unitOfWork;
+        _transactionRepository = transactionRepository;
     }
 
     public async Task<CardCreatedDto> CreateCard(int userId, CreateCardDto dto, CancellationToken ct)
@@ -102,5 +105,28 @@ public class CardService : ICardService
         if (getcard == null)
             throw new KeyNotFoundException("Card not found");
         return getcard.Cvv;
+    }
+    
+    public async Task<CardResponseDto> SetDailyLimit(int userId, int cardId, decimal? dailyLimit, CancellationToken ct)
+    {
+        var card = await _cardRepository.GetCardByIdAsync(userId, cardId, ct);
+        if (card == null)
+            throw new KeyNotFoundException("Card not found");
+        if (dailyLimit.HasValue && dailyLimit.Value < 0)
+            throw new InvalidOperationException("Limit cannot be negative");
+
+        card.DailyLimit = dailyLimit;
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Card {CardId} daily limit set to {Limit}", cardId, dailyLimit);
+        return _mapper.Map<CardResponseDto>(card);
+    }
+    public async Task<decimal> GetSpentToday(int userId, int cardId, CancellationToken ct)
+    {
+        var card = await _cardRepository.GetCardByIdAsync(userId, cardId, ct);
+        if (card == null)
+            throw new KeyNotFoundException("Card not found");
+
+        return await _transactionRepository.GetTodaySpentByCardAsync(cardId, ct);
     }
 }

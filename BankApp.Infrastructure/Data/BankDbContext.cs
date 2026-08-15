@@ -60,6 +60,16 @@ public class BankDbContext : DbContext
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.Card)
+            .WithMany()
+            .HasForeignKey(t => t.CardId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<Card>()
+            .Property(c => c.DailyLimit)
+            .HasPrecision(18, 2);
+        
         
         modelBuilder.Entity<SavingsJar>(e =>
         {

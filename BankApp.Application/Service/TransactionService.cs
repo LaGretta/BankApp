@@ -37,56 +37,74 @@ public class TransactionService : ITransactionService
     }
 
     public async Task<TransactionResponseDto> Transfer(int userId, TransferDto dto, CancellationToken ct)
+{
+    if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
+        throw new InvalidOperationException("Duplicate transaction");
+
+    var fromCard = await _cardRepository.GetCardByIdAsync(userId, dto.FromCardId, ct);
+    if (fromCard == null)
+        throw new KeyNotFoundException("Card not found");
+    if (!fromCard.IsActive)
+        throw new InvalidOperationException("Card is blocked");
+
+    var fromAccount = fromCard.Account;
+    if (fromAccount == null)
+        throw new KeyNotFoundException("From account not found");
+
+    var toAccount = await _accountRepository.GetByIdAsync(dto.ToAccountId, ct);
+    if (toAccount == null)
+        throw new KeyNotFoundException("To account not found");
+
+    if (fromAccount.Id == toAccount.Id)
+        throw new InvalidOperationException("Cannot transfer to the same account");
+    if (fromAccount.Currency != toAccount.Currency)
+        throw new InvalidOperationException("Currency mismatch");
+    if (fromAccount.Balance < dto.Amount)
+        throw new InvalidOperationException("Insufficient funds");
+
+    if (fromCard.DailyLimit.HasValue)
     {
-        if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
-            throw new InvalidOperationException("Duplicate transaction");
-        var fromAccount = await _accountRepository.GetMyAccountByIdAsync(userId,dto.FromAccountId, ct);
-        if (fromAccount == null)
-            throw new KeyNotFoundException("From account not found");
-
-        var toAccount = await _accountRepository.GetByIdAsync(dto.ToAccountId, ct);
-        if (toAccount == null)
-            throw new KeyNotFoundException("To account not found");
-        if (fromAccount.Currency != toAccount.Currency)
-            throw new InvalidOperationException("Currency mismatch");
-        if (fromAccount.Balance < dto.Amount)
-            throw new InvalidOperationException("Insufficient funds");
-        
-        await _unitOfWork.BeginTransactionAsync(ct);   
-        try
-        {
-            fromAccount.Balance -= dto.Amount;  
-            toAccount.Balance   += dto.Amount;  
-
-            var transaction = new Transaction
-            {
-                FromAccountId   = dto.FromAccountId,
-                ToAccountId     = dto.ToAccountId,
-                Amount          = dto.Amount,
-                Currency        = fromAccount.Currency,
-                Type            = TransactionType.Transfer,
-                Status          = TransactionStatus.Completed,
-                Description     = dto.Description,
-                CreatedAt       = DateTime.UtcNow,
-                IdempotencyKey  = dto.IdempotencyKey  
-            };
-            
-            await _transactionRepository.AddAsync(transaction, ct);
-
-            await _unitOfWork.SaveChangesAsync(ct);       
-            await _unitOfWork.CommitTransactionAsync(ct);
-
-            _logger.LogInformation("Transfer {Amount} from {From} to {To}",
-                dto.Amount, dto.FromAccountId, dto.ToAccountId);
-
-            return _mapper.Map<TransactionResponseDto>(transaction);
-        }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync(ct);
-            throw;
-        }
+        var spentToday = await _transactionRepository.GetTodaySpentByCardAsync(fromCard.Id, ct);
+        if (spentToday + dto.Amount > fromCard.DailyLimit.Value)
+            throw new InvalidOperationException("Daily card limit exceeded");
     }
+
+    await _unitOfWork.BeginTransactionAsync(ct);
+    try
+    {
+        fromAccount.Balance -= dto.Amount;
+        toAccount.Balance   += dto.Amount;
+
+        var transaction = new Transaction
+        {
+            FromAccountId  = fromAccount.Id,
+            ToAccountId    = dto.ToAccountId,
+            CardId         = fromCard.Id,
+            Amount         = dto.Amount,
+            Currency       = fromAccount.Currency,
+            Type           = TransactionType.Transfer,
+            Status         = TransactionStatus.Completed,
+            Description    = dto.Description,
+            CreatedAt      = DateTime.UtcNow,
+            IdempotencyKey = dto.IdempotencyKey
+        };
+
+        await _transactionRepository.AddAsync(transaction, ct);
+
+        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork.CommitTransactionAsync(ct);
+
+        _logger.LogInformation("Transfer {Amount} from card {Card} (account {From}) to account {To}",
+            dto.Amount, fromCard.Id, fromAccount.Id, dto.ToAccountId);
+
+        return _mapper.Map<TransactionResponseDto>(transaction);
+    }
+    catch
+    {
+        await _unitOfWork.RollbackTransactionAsync(ct);
+        throw;
+    }
+}
     public async Task<TransactionResponseDto> TopUp(int userId, TopUpDto dto, CancellationToken ct)
     {
         if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
@@ -157,63 +175,79 @@ public class TransactionService : ITransactionService
         return _mapper.Map<TransactionResponseDto>(get);
     }
 
-    public async Task<TransactionResponseDto> TransferByCard(int userId, TransferByCardDto dto, CancellationToken ct)
+   public async Task<TransactionResponseDto> TransferByCard(int userId, TransferByCardDto dto, CancellationToken ct)
+{
+    if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
+        throw new InvalidOperationException("Duplicate transaction");
+
+    var fromCard = await _cardRepository.GetCardByIdAsync(userId, dto.FromCardId, ct);
+    if (fromCard == null)
+        throw new KeyNotFoundException("Card not found");
+    if (!fromCard.IsActive)
+        throw new InvalidOperationException("Card is blocked");
+
+    var fromAccount = fromCard.Account;
+    if (fromAccount == null)
+        throw new KeyNotFoundException("From account not found");
+
+    var toCard = await _cardRepository.GetByNumberAsync(dto.CardNumber, ct);
+    if (toCard == null)
+        throw new KeyNotFoundException("Card not found");
+    if (!toCard.IsActive)
+        throw new InvalidOperationException("Recipient card is blocked");
+
+    var toAccount = toCard.Account;
+    if (toAccount == null)
+        throw new KeyNotFoundException("Account not found");
+
+    if (fromAccount.Id == toAccount.Id)
+        throw new InvalidOperationException("Cannot transfer to the same account");
+    if (fromAccount.Currency != toAccount.Currency)
+        throw new InvalidOperationException("Currency mismatch");
+    if (fromAccount.Balance < dto.Amount)
+        throw new InvalidOperationException("Insufficient funds");
+
+    if (fromCard.DailyLimit.HasValue)
     {
-        if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
-            throw new InvalidOperationException("Duplicate transaction");
-        
-        var fromAccount = await _accountRepository.GetMyAccountByIdAsync(userId,dto.FromAccountId, ct);
-        if (fromAccount == null)
-            throw new KeyNotFoundException("From account not found");
-
-        var toCard = await _cardRepository.GetByNumberAsync(dto.CardNumber, ct);
-        if (toCard == null)
-            throw new KeyNotFoundException("Card not found");
-        if (!toCard.IsActive)
-            throw new InvalidOperationException("Recipient card is blocked");
-
-        var toAccount = toCard.Account;
-        if (toAccount == null)
-            throw new KeyNotFoundException("Account not found");
-       
-        if (fromAccount.Id == toAccount.Id)
-            throw new InvalidOperationException("Cannot transfer to the same account");
-        if (fromAccount.Currency != toAccount.Currency)
-            throw new InvalidOperationException("Currency mismatch");
-        if (fromAccount.Balance < dto.Amount)
-            throw new InvalidOperationException("Insufficient funds");
-        
-        await _unitOfWork.BeginTransactionAsync(ct);   
-        try
-        {
-            fromAccount.Balance -= dto.Amount;  
-            toAccount.Balance   += dto.Amount;  
-
-            var transaction = new Transaction
-            {
-                FromAccountId   = dto.FromAccountId,
-                ToAccountId     = toAccount.Id,
-                Amount          = dto.Amount,
-                Currency        = fromAccount.Currency,
-                Type            = TransactionType.Transfer,
-                Status          = TransactionStatus.Completed,
-                Description     = dto.Description,
-                CreatedAt       = DateTime.UtcNow,
-                IdempotencyKey  = dto.IdempotencyKey  
-            };
-            
-            await _transactionRepository.AddAsync(transaction, ct);
-
-            await _unitOfWork.SaveChangesAsync(ct);       
-            await _unitOfWork.CommitTransactionAsync(ct);
-            _logger.LogInformation("TransferByCard {Amount} from account {From} to account {To}",
-                dto.Amount, dto.FromAccountId, toAccount.Id);
-            return _mapper.Map<TransactionResponseDto>(transaction);
-        }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync(ct);
-            throw;
-        }
+        var spentToday = await _transactionRepository.GetTodaySpentByCardAsync(fromCard.Id, ct);
+        if (spentToday + dto.Amount > fromCard.DailyLimit.Value)
+            throw new InvalidOperationException("Daily card limit exceeded");
     }
+
+    await _unitOfWork.BeginTransactionAsync(ct);
+    try
+    {
+        fromAccount.Balance -= dto.Amount;
+        toAccount.Balance   += dto.Amount;
+
+        var transaction = new Transaction
+        {
+            FromAccountId  = fromAccount.Id,
+            ToAccountId    = toAccount.Id,
+            CardId         = fromCard.Id,
+            Amount         = dto.Amount,
+            Currency       = fromAccount.Currency,
+            Type           = TransactionType.Transfer,
+            Status         = TransactionStatus.Completed,
+            Description    = dto.Description,
+            CreatedAt      = DateTime.UtcNow,
+            IdempotencyKey = dto.IdempotencyKey
+        };
+
+        await _transactionRepository.AddAsync(transaction, ct);
+
+        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork.CommitTransactionAsync(ct);
+
+        _logger.LogInformation("TransferByCard {Amount} from card {Card} (account {From}) to account {To}",
+            dto.Amount, fromCard.Id, fromAccount.Id, toAccount.Id);
+
+        return _mapper.Map<TransactionResponseDto>(transaction);
+    }
+    catch
+    {
+        await _unitOfWork.RollbackTransactionAsync(ct);
+        throw;
+    }
+}
 }

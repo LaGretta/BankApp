@@ -8,4 +8,5 @@ public interface ITransactionRepository
     Task<bool> ExistsByIdempotencyKeyAsync(string key, CancellationToken ct);
     Task<(List<Transaction> items, int totalCount)> GetMyTransactionsAsync(int userId, int page, int pageSize, CancellationToken ct);
     Task<Transaction?> GetTransactionByIdAsync(int userId, int transactionId, CancellationToken ct);
+    Task<decimal> GetTodaySpentByCardAsync(int cardId, CancellationToken ct);
 }

@@ -17,6 +17,7 @@ import { TransactionDetail } from './screens/TransactionDetail'
 import { Savings } from './screens/Savings'
 import { CreateJar } from './screens/CreateJar'
 import { JarDetail } from './screens/JarDetail'
+import { CardLimit } from './screens/CardLimit'
 import type { JSX } from 'react'
 
 function Protected({ children, nav = true }: { children: JSX.Element; nav?: boolean }) {
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/accounts" element={<Protected><Accounts /></Protected>} />
         <Route path="/accounts/:id" element={<Protected nav={false}><AccountDetail /></Protected>} />
         <Route path="/cards/:id" element={<Protected nav={false}><CardDetail /></Protected>} />
+        <Route path="/cards/:id/limit" element={<Protected nav={false}><CardLimit /></Protected>} />
         <Route path="/cards/new" element={<Protected nav={false}><CreateCard /></Protected>} />
         <Route path="/transfer" element={<Protected><Transfer /></Protected>} />
         <Route path="/topup" element={<Protected nav={false}><TopUp /></Protected>} />

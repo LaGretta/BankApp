@@ -9,9 +9,10 @@ export function getTransaction(id: number) {
   return api.get<TransactionResponse>(`/api/transactions/${id}`)
 }
 
-/** ПЕРВИННИЙ переказ — за номером картки отримувача (monobank-style). */
+/** ПЕРВИННИЙ переказ — за номером картки отримувача (monobank-style).
+    Списання тепер з КАРТКИ (fromCardId) — рахунок резолвиться на бекенді. */
 export function transferByCard(input: {
-  fromAccountId: number
+  fromCardId: number
   cardNumber: string // тільки цифри, 16
   amount: number
   description: string
@@ -20,9 +21,9 @@ export function transferByCard(input: {
   return api.post<TransactionResponse>('/api/transactions/transfer-by-card', input)
 }
 
-/** Вторинний — між своїми рахунками. */
+/** Вторинний — між своїми рахунками. Джерело — картка (fromCardId), призначення — рахунок. */
 export function transfer(input: {
-  fromAccountId: number
+  fromCardId: number
   toAccountId: number
   amount: number
   description: string
