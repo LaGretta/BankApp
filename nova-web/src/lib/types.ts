@@ -9,7 +9,8 @@ export interface AuthResponse {
   email: string
   role: string // "User" | "Admin"
   createdAt: string
-  token: string
+  token: string // короткоживучий access JWT (~30 хв)
+  refreshToken: string // довгий opaque refresh-токен (ротується при кожному refresh)
 }
 
 export interface CardResponse {

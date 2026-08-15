@@ -16,14 +16,17 @@ import './styles/tokens.css'
 import './styles/global.css'
 
 import App from './App'
-import { registerUnauthorizedHandler } from './lib/apiClient'
-import { forceLogout } from './store/authStore'
+import { registerAuthHandlers } from './lib/apiClient'
+import { useAuthStore } from './store/authStore'
 
-// 401 з дійсним токеном → прострочення сесії: чистимо токен + ставимо прапорець.
-// Редірект зробить ProtectedRoute, повідомлення покаже банер на екрані логіну
-// (надійніше за тост, який спалахує саме під час навігації).
-registerUnauthorizedHandler(() => {
-  forceLogout()
+// Зв'язуємо apiClient зі стором:
+// - getRefreshToken: звідки взяти поточний refresh-токен для /auth/refresh;
+// - onTokensRefreshed: зберегти НОВІ token+refreshToken (ротація) після silent-refresh;
+// - onRefreshFailed: refresh протух/відкликаний → очистити сесію + банер, редірект робить ProtectedRoute.
+registerAuthHandlers({
+  getRefreshToken: () => useAuthStore.getState().refreshToken,
+  onTokensRefreshed: (t) => useAuthStore.getState().updateTokens(t),
+  onRefreshFailed: () => useAuthStore.getState().expireSession(),
 })
 
 createRoot(document.getElementById('root')!).render(

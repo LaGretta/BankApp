@@ -30,7 +30,7 @@ export function Dashboard() {
   const location = useLocation()
   const focus = (location.state as { focusAccountId?: number; focusCardNumber?: string } | null) ?? null
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
+  const logoutAsync = useAuthStore((s) => s.logoutAsync)
 
   const accountsQ = useAsync(() => getAccounts(), [])
   // тягнемо ширшу історію й фільтруємо по активному рахунку клієнтом
@@ -118,7 +118,7 @@ export function Dashboard() {
           </button>
           <button
             aria-label="Вийти"
-            onClick={logout}
+            onClick={() => void logoutAsync()}
             className="control"
             style={{ width: 40, height: 40, borderRadius: 'var(--r-field)', color: 'var(--text-2)' }}
           >

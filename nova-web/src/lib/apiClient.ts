@@ -2,15 +2,22 @@ import type { ProblemDetails } from './types'
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5203').replace(/\/$/, '')
 
-/* --- токен тримаємо тут, щоб уникнути циклічних залежностей зі стором --- */
+/* --- access-токен тримаємо тут, щоб уникнути циклічних залежностей зі стором --- */
 let authToken: string | null = null
-let onUnauthorized: (() => void) | null = null
 
 export function setAuthToken(token: string | null) {
   authToken = token
 }
-export function registerUnauthorizedHandler(cb: () => void) {
-  onUnauthorized = cb
+
+/* Хендлери авторизації (реєструє main.tsx → зв'язує зі стором). */
+interface AuthHandlers {
+  getRefreshToken: () => string | null
+  onTokensRefreshed: (res: { token: string; refreshToken: string }) => void
+  onRefreshFailed: () => void
+}
+let handlers: AuthHandlers | null = null
+export function registerAuthHandlers(h: AuthHandlers) {
+  handlers = h
 }
 
 export class ApiError extends Error {
@@ -31,6 +38,8 @@ interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | undefined>
   signal?: AbortSignal
+  /** внутрішнє: запит уже повторено після refresh (щоб не зациклитись) */
+  _retried?: boolean
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
@@ -41,6 +50,42 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
     }
   }
   return url.toString()
+}
+
+/* ==========================================================================
+   Тихий refresh. ЄДИНИЙ in-flight проміс: усі паралельні 401 чекають на ОДИН
+   виклик /api/auth/refresh, тоді повторюють свої запити (без «refresh storm»).
+   ========================================================================== */
+let refreshPromise: Promise<boolean> | null = null
+
+async function performRefresh(): Promise<boolean> {
+  const rt = handlers?.getRefreshToken() ?? null
+  if (!rt) return false
+  try {
+    // «сирий» fetch — НЕ через request(), щоб не тригерити інтерсептор рекурсивно
+    const res = await fetch(BASE_URL + '/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ refreshToken: rt }),
+    })
+    if (!res.ok) return false
+    const data = (await res.json()) as { token?: string; refreshToken?: string }
+    if (!data?.token || !data?.refreshToken) return false
+    authToken = data.token
+    // ротація: зберігаємо НОВИЙ token + НОВИЙ refreshToken
+    handlers?.onTokensRefreshed({ token: data.token, refreshToken: data.refreshToken })
+    return true
+  } catch {
+    return false
+  }
+}
+
+function doRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = performRefresh().finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
 }
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -58,15 +103,18 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     })
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw e
-    // мережа недоступна / бекенд не піднято
     throw new ApiError(0, 'Немає з’єднання із сервером. Перевір, чи запущений бекенд.')
   }
 
-  // 401 з ДІЙСНИМ токеном → сесія прострочена: чистимо токен і на логін.
-  // 401 без токена (спроба логіну/реєстрації) — це помилка облікових даних,
-  // а не завершення сесії: пропускаємо далі, хай екран покаже свій текст.
+  // 401 на АВТОРИЗОВАНОМУ запиті → тихий refresh + одна спроба повтору.
+  // (401 без access-токена — логін/реєстрація — сюди не потрапляє: там показуємо
+  //  «Невірний email або пароль»; сесія ще не існує.)
   if (res.status === 401 && authToken) {
-    onUnauthorized?.()
+    if (!opts._retried && (await doRefresh())) {
+      return request<T>(path, { ...opts, _retried: true })
+    }
+    // refresh не вдався (протух/відкликаний) або новий токен теж 401 → на логін з банером
+    handlers?.onRefreshFailed()
     throw new ApiError(401, 'Сесія завершилась. Увійдіть знову.')
   }
 
@@ -78,10 +126,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   if (!res.ok) {
     const problem = (data ?? {}) as ProblemDetails
     const detail =
-      problem.detail ||
-      problem.title ||
-      firstValidationError(problem) ||
-      `Помилка ${res.status}`
+      problem.detail || problem.title || firstValidationError(problem) || `Помилка ${res.status}`
     throw new ApiError(res.status, detail, problem)
   }
 
