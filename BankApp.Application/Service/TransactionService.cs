@@ -18,6 +18,7 @@ public class TransactionService : ITransactionService
     private readonly ICardRepository _cardRepository;
     private readonly ILogger<TransactionService> _logger;
     private readonly IAccountRepository _accountRepository;
+    private readonly IExchangeRateService _exchangeRateService;
 
 
     public TransactionService(
@@ -26,7 +27,8 @@ public class TransactionService : ITransactionService
         , IUnitOfWork unitOfWork
         , ICardRepository cardRepository
         , ILogger<TransactionService> logger
-        , IAccountRepository accountRepository)
+        , IAccountRepository accountRepository
+        , IExchangeRateService exchangeRateService)
     {
         _transactionRepository = transactionRepository;
         _mapper = mapper;
@@ -34,9 +36,10 @@ public class TransactionService : ITransactionService
         _cardRepository = cardRepository;
         _logger = logger;
         _accountRepository = accountRepository;
+        _exchangeRateService = exchangeRateService;
     }
 
-    public async Task<TransactionResponseDto> Transfer(int userId, TransferDto dto, CancellationToken ct)
+public async Task<TransactionResponseDto> Transfer(int userId, TransferDto dto, CancellationToken ct)
 {
     if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
         throw new InvalidOperationException("Duplicate transaction");
@@ -57,8 +60,6 @@ public class TransactionService : ITransactionService
 
     if (fromAccount.Id == toAccount.Id)
         throw new InvalidOperationException("Cannot transfer to the same account");
-    if (fromAccount.Currency != toAccount.Currency)
-        throw new InvalidOperationException("Currency mismatch");
     if (fromAccount.Balance < dto.Amount)
         throw new InvalidOperationException("Insufficient funds");
 
@@ -69,18 +70,31 @@ public class TransactionService : ITransactionService
             throw new InvalidOperationException("Daily card limit exceeded");
     }
 
+    var debitAmount = dto.Amount;
+    decimal creditAmount;
+    if (fromAccount.Currency == toAccount.Currency)
+    {
+        creditAmount = debitAmount;
+    }
+    else
+    {
+        var fromRate = await _exchangeRateService.GetRateToUahAsync(fromAccount.Currency, ct);
+        var toRate   = await _exchangeRateService.GetRateToUahAsync(toAccount.Currency, ct);
+        creditAmount = debitAmount * fromRate / toRate;
+    }
+
     await _unitOfWork.BeginTransactionAsync(ct);
     try
     {
-        fromAccount.Balance -= dto.Amount;
-        toAccount.Balance   += dto.Amount;
+        fromAccount.Balance -= debitAmount;
+        toAccount.Balance   += creditAmount;
 
         var transaction = new Transaction
         {
             FromAccountId  = fromAccount.Id,
             ToAccountId    = dto.ToAccountId,
             CardId         = fromCard.Id,
-            Amount         = dto.Amount,
+            Amount         = debitAmount,
             Currency       = fromAccount.Currency,
             Type           = TransactionType.Transfer,
             Status         = TransactionStatus.Completed,
@@ -94,8 +108,8 @@ public class TransactionService : ITransactionService
         await _unitOfWork.SaveChangesAsync(ct);
         await _unitOfWork.CommitTransactionAsync(ct);
 
-        _logger.LogInformation("Transfer {Amount} from card {Card} (account {From}) to account {To}",
-            dto.Amount, fromCard.Id, fromAccount.Id, dto.ToAccountId);
+        _logger.LogInformation("Transfer {Debit} {FromCur} -> {Credit} {ToCur}, card {Card}",
+            debitAmount, fromAccount.Currency, creditAmount, toAccount.Currency, fromCard.Id);
 
         return _mapper.Map<TransactionResponseDto>(transaction);
     }
@@ -175,7 +189,7 @@ public class TransactionService : ITransactionService
         return _mapper.Map<TransactionResponseDto>(get);
     }
 
-   public async Task<TransactionResponseDto> TransferByCard(int userId, TransferByCardDto dto, CancellationToken ct)
+public async Task<TransactionResponseDto> TransferByCard(int userId, TransferByCardDto dto, CancellationToken ct)
 {
     if (await _transactionRepository.ExistsByIdempotencyKeyAsync(dto.IdempotencyKey, ct))
         throw new InvalidOperationException("Duplicate transaction");
@@ -202,8 +216,6 @@ public class TransactionService : ITransactionService
 
     if (fromAccount.Id == toAccount.Id)
         throw new InvalidOperationException("Cannot transfer to the same account");
-    if (fromAccount.Currency != toAccount.Currency)
-        throw new InvalidOperationException("Currency mismatch");
     if (fromAccount.Balance < dto.Amount)
         throw new InvalidOperationException("Insufficient funds");
 
@@ -214,18 +226,31 @@ public class TransactionService : ITransactionService
             throw new InvalidOperationException("Daily card limit exceeded");
     }
 
+    var debitAmount = dto.Amount;
+    decimal creditAmount;
+    if (fromAccount.Currency == toAccount.Currency)
+    {
+        creditAmount = debitAmount;
+    }
+    else
+    {
+        var fromRate = await _exchangeRateService.GetRateToUahAsync(fromAccount.Currency, ct);
+        var toRate   = await _exchangeRateService.GetRateToUahAsync(toAccount.Currency, ct);
+        creditAmount = debitAmount * fromRate / toRate;
+    }
+
     await _unitOfWork.BeginTransactionAsync(ct);
     try
     {
-        fromAccount.Balance -= dto.Amount;
-        toAccount.Balance   += dto.Amount;
+        fromAccount.Balance -= debitAmount;
+        toAccount.Balance   += creditAmount;
 
         var transaction = new Transaction
         {
             FromAccountId  = fromAccount.Id,
             ToAccountId    = toAccount.Id,
             CardId         = fromCard.Id,
-            Amount         = dto.Amount,
+            Amount         = debitAmount,
             Currency       = fromAccount.Currency,
             Type           = TransactionType.Transfer,
             Status         = TransactionStatus.Completed,
@@ -239,8 +264,8 @@ public class TransactionService : ITransactionService
         await _unitOfWork.SaveChangesAsync(ct);
         await _unitOfWork.CommitTransactionAsync(ct);
 
-        _logger.LogInformation("TransferByCard {Amount} from card {Card} (account {From}) to account {To}",
-            dto.Amount, fromCard.Id, fromAccount.Id, toAccount.Id);
+        _logger.LogInformation("TransferByCard {Debit} {FromCur} -> {Credit} {ToCur}, card {Card}",
+            debitAmount, fromAccount.Currency, creditAmount, toAccount.Currency, fromCard.Id);
 
         return _mapper.Map<TransactionResponseDto>(transaction);
     }
