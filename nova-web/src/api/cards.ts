@@ -1,6 +1,6 @@
 import { api } from '../lib/apiClient'
 import type { CardTier } from '../lib/enums'
-import type { CardCreated, CardCvv, CardResponse, CardSpentToday } from '../lib/types'
+import type { CardCreated, CardCurrency, CardCvv, CardResponse, CardSpentToday } from '../lib/types'
 
 export function getCard(id: number) {
   return api.get<CardResponse>(`/api/cards/${id}`)
@@ -28,4 +28,9 @@ export function setCardLimit(id: number, dailyLimit: number | null) {
 /** Витрачено сьогодні за карткою (для бару лімітів). */
 export function getCardSpentToday(id: number) {
   return api.get<CardSpentToday>(`/api/cards/${id}/spent-today`)
+}
+
+/** Валюта картки за її номером (для прев'ю конвертації в переказі за номером). */
+export function getCardCurrencyByNumber(cardNumber: string) {
+  return api.get<CardCurrency>(`/api/cards/currency-by-number/${cardNumber}`)
 }

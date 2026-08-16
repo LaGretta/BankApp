@@ -10,4 +10,5 @@ public interface ICardService
     Task<string> GetCardCvv(int userId, int cardId, CancellationToken ct);
     Task<CardResponseDto> SetDailyLimit(int userId, int cardId, decimal? dailyLimit, CancellationToken ct);
     Task<decimal> GetSpentToday(int userId, int cardId, CancellationToken ct);
+    Task<string> GetCardCurrency(string cardNumber, int userId, CancellationToken ct);
 }

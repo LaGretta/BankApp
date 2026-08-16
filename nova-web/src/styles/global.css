@@ -80,7 +80,7 @@ input::placeholder {
 .app-frame {
   width: 100%;
   max-width: var(--app-max);
-  min-height: 100dvh;
+  height: 100dvh; /* точна висота екрана — frame не росте, скрол лишається всередині */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -90,6 +90,7 @@ input::placeholder {
 
 .app-scroll {
   flex: 1;
+  min-height: 0; /* дозволяє flex-дитині скролитись, а не розпирати frame (нижня навігація лишається прикутою) */
   overflow-y: auto;
   overflow-x: hidden;
   padding: calc(var(--safe-top) + 14px) 18px calc(var(--nav-h) + var(--safe-bottom) + 24px);

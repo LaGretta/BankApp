@@ -129,4 +129,11 @@ public class CardService : ICardService
 
         return await _transactionRepository.GetTodaySpentByCardAsync(cardId, ct);
     }
+    public async Task<string> GetCardCurrency(string cardNumber, int userId, CancellationToken ct)
+    {
+        var card = await _cardRepository.GetByNumberAsync(cardNumber, ct);
+        if (card == null || card.Account == null)
+            throw new KeyNotFoundException("Card not found");
+        return card.Account.Currency.ToString();
+    }
 }

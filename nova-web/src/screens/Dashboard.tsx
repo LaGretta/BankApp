@@ -9,6 +9,7 @@ import { CardCarousel } from '../components/CardCarousel'
 import { EmptyState } from '../components/EmptyState'
 import { FlipCard } from '../components/FlipCard'
 import { PullToRefresh } from '../components/PullToRefresh'
+import { RatesWidget } from '../components/RatesWidget'
 import { RowSkeleton, Skeleton } from '../components/Skeleton'
 import { Sheet } from '../components/Sheet'
 import { TransactionRow } from '../components/TransactionRow'
@@ -230,6 +231,9 @@ export function Dashboard() {
           </div>
         </>
       )}
+
+      {/* курси валют — остання секція Home */}
+      {accounts.length > 0 && <RatesWidget />}
 
       {/* block confirm */}
       <Sheet open={blockAsk} onClose={() => setBlockAsk(false)}>

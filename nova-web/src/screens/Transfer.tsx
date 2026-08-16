@@ -1,7 +1,8 @@
-import { ArrowDown, CreditCard, Users } from 'lucide-react'
+import { ArrowDown, CreditCard, Info, Users } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getAccounts } from '../api/accounts'
+import { getCardCurrencyByNumber } from '../api/cards'
 import { transfer, transferByCard } from '../api/transactions'
 import { Amount } from '../components/Amount'
 import { Button } from '../components/Button'
@@ -13,9 +14,10 @@ import { SuccessOverlay } from '../components/SuccessOverlay'
 import { TopBar } from '../components/TopBar'
 import { useAsync } from '../hooks/useAsync'
 import { ApiError } from '../lib/apiClient'
-import { CURRENCY_SYMBOL, TIER_LABEL } from '../lib/enums'
-import { last4 } from '../lib/format'
+import { CURRENCY_SYMBOL, type CurrencyCode, TIER_LABEL } from '../lib/enums'
+import { formatAmount, last4 } from '../lib/format'
 import { newGuid } from '../lib/idempotency'
+import { convert, fetchRate } from '../lib/rates'
 import type { AccountResponse, CardResponse } from '../lib/types'
 import { toast } from '../store/toastStore'
 
@@ -51,6 +53,10 @@ export function Transfer() {
   const [done, setDone] = useState(false)
   const idemKey = useRef(newGuid())
 
+  // конвертація: валюта отримувача (card-mode лукап) + кеш курсів
+  const [recipientCurrency, setRecipientCurrency] = useState<CurrencyCode | null>(null)
+  const [rateMap, setRateMap] = useState<Partial<Record<CurrencyCode, number>>>({})
+
   // авто-вибір джерела: preset-картка (якщо активна) або перша активна
   useEffect(() => {
     if (!activeCards.length) return
@@ -67,16 +73,54 @@ export function Transfer() {
   const currency = fromCard?.account.currency
   const symbol = currency ? CURRENCY_SYMBOL[currency] : ''
 
-  // призначення «між своїми» — мій інший рахунок тієї ж валюти (не рахунок картки-джерела)
-  const ownTargets = accounts.filter(
-    (a) => fromCard && a.currency === fromCard.account.currency && a.id !== fromCard.account.id,
-  )
+  // призначення «між своїми» — будь-який мій інший рахунок (можлива інша валюта = обмін)
+  const ownTargets = accounts.filter((a) => fromCard && a.id !== fromCard.account.id)
 
   const amountNum = Number(amount.replace(',', '.'))
   const recipientDigits = recipient.replace(/\s/g, '')
   const balance = fromCard?.account.balance
   const validAmount = amountNum > 0
   const enough = balance != null ? amountNum <= balance : false
+
+  // валюта призначення: own → рахунок; card → лукап за номером
+  const destCurrency: CurrencyCode | null =
+    mode === 'own' ? (accounts.find((a) => a.id === toAccountId)?.currency ?? null) : recipientCurrency
+  const cross = !!currency && !!destCurrency && currency !== destCurrency
+
+  // card-mode: лукап валюти отримувача за 16-значним номером (debounce)
+  useEffect(() => {
+    if (mode !== 'card' || recipientDigits.length !== 16) {
+      setRecipientCurrency(null)
+      return
+    }
+    let alive = true
+    const t = setTimeout(() => {
+      getCardCurrencyByNumber(recipientDigits)
+        .then((r) => alive && setRecipientCurrency(r.currency))
+        .catch(() => alive && setRecipientCurrency(null))
+    }, 400)
+    return () => {
+      alive = false
+      clearTimeout(t)
+    }
+  }, [mode, recipientDigits])
+
+  // підтягуємо курси для src+dst (кеш на сесію; UAH=1 без запиту)
+  useEffect(() => {
+    for (const c of [currency, destCurrency]) {
+      if (c && c !== 'UAH' && rateMap[c] === undefined) {
+        fetchRate(c).then((r) => setRateMap((m) => ({ ...m, [c]: r.rate }))).catch(() => {})
+      }
+    }
+  }, [currency, destCurrency, rateMap])
+
+  const rateOf = (c: CurrencyCode | null | undefined) => (c === 'UAH' ? 1 : c ? rateMap[c] : undefined)
+  const srcRate = rateOf(currency)
+  const dstRate = rateOf(destCurrency)
+  const received = cross && srcRate && dstRate && validAmount ? convert(amountNum, srcRate, dstRate) : null
+  // курс-«якір»: показуємо не-UAH сторону («1 USD = 41.53 UAH»)
+  const anchorCcy: CurrencyCode | null = destCurrency && destCurrency !== 'UAH' ? destCurrency : currency ?? null
+  const anchorVal = rateOf(anchorCcy)
 
   const canCard = !!fromCard && recipientDigits.length === 16 && validAmount && enough
   const canOwn = !!fromCard && toAccountId != null && validAmount && enough
@@ -194,10 +238,10 @@ export function Transfer() {
         />
       ) : (
         <>
-          <p className="mono-cap" style={{ margin: '0 4px 10px' }}>На рахунок (той самий {currency})</p>
+          <p className="mono-cap" style={{ margin: '0 4px 10px' }}>На рахунок</p>
           {ownTargets.length === 0 ? (
             <div className="surface" style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>
-              <span className="t-label">Немає іншого рахунку у {currency}. Відкрийте ще один рахунок цієї валюти.</span>
+              <span className="t-label">Немає інших рахунків. Відкрийте ще один рахунок.</span>
             </div>
           ) : (
             <div className="surface" style={{ padding: '4px 14px' }}>
@@ -212,8 +256,8 @@ export function Transfer() {
         </>
       )}
 
-      {/* amount + description */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 13, marginTop: 18 }}>
+      {/* amount */}
+      <div style={{ marginTop: 18 }}>
         <Field
           label="Сума"
           placeholder="0.00"
@@ -223,6 +267,24 @@ export function Transfer() {
           suffix={<span className="mono text-3" style={{ fontWeight: 600 }}>{symbol}</span>}
           error={amount !== '' && !validAmount ? 'Введіть суму більшу за 0' : amount !== '' && !enough ? 'Недостатньо коштів' : undefined}
         />
+      </div>
+
+      {/* conversion preview / note */}
+      <ConversionBlock
+        mode={mode}
+        cross={cross}
+        srcCcy={currency ?? null}
+        destCcy={destCurrency}
+        toChosen={mode === 'own' ? toAccountId != null : recipientDigits.length === 16}
+        recipientKnown={mode === 'card' ? recipientCurrency != null : true}
+        amountNum={validAmount ? amountNum : 0}
+        received={received}
+        anchorCcy={anchorCcy}
+        anchorVal={anchorVal}
+      />
+
+      {/* description */}
+      <div style={{ marginTop: 13 }}>
         <Field
           label="Опис (необовʼязково)"
           placeholder={mode === 'card' ? 'Переказ' : 'Між своїми'}
@@ -290,6 +352,95 @@ function Radio({ on }: { on: boolean }) {
     <span style={{ marginLeft: 6, width: 20, height: 20, borderRadius: '50%', border: `2px solid ${on ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       {on && <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)' }} />}
     </span>
+  )
+}
+
+function ConversionBlock({
+  mode,
+  cross,
+  srcCcy,
+  destCcy,
+  toChosen,
+  recipientKnown,
+  amountNum,
+  received,
+  anchorCcy,
+  anchorVal,
+}: {
+  mode: Mode
+  cross: boolean
+  srcCcy: CurrencyCode | null
+  destCcy: CurrencyCode | null
+  toChosen: boolean
+  recipientKnown: boolean
+  amountNum: number
+  received: number | null
+  anchorCcy: CurrencyCode | null
+  anchorVal: number | undefined
+}) {
+  if (!toChosen) return null
+
+  const note = (text: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 12, color: 'var(--text-3)' }}>
+      <Info size={12} strokeWidth={1.9} style={{ flexShrink: 0 }} />
+      <span style={{ fontSize: 10.5, lineHeight: 1.4 }}>{text}</span>
+    </div>
+  )
+
+  // card-режим: валюту отримувача ще не знаємо
+  if (mode === 'card' && !recipientKnown) {
+    return note('Сума буде конвертована за курсом на момент переказу, якщо валюта відрізняється.')
+  }
+  // та сама валюта — без конвертації
+  if (!cross) {
+    return note('Та сама валюта · без конвертації')
+  }
+
+  // крос-валютно — прев'ю
+  const fmtRate = (r: number) => r.toFixed(2)
+  return (
+    <div
+      style={{
+        marginTop: 14,
+        padding: '15px 16px',
+        borderRadius: 16,
+        border: '1px solid var(--preview-border)',
+        boxShadow: '0 0 0 3px rgba(127,230,214,.06)',
+        background:
+          'radial-gradient(140% 120% at 50% 0, rgba(127,230,214,.08), transparent 65%), linear-gradient(160deg,#141418,#0E0E12)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Ви відправляєте</span>
+        <span className="mono" style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)' }}>
+          {formatAmount(amountNum)} {srcCcy}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+        <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Отримувач одержить</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          {destCcy && <FlagBadge currency={destCcy} size={22} />}
+          <span className="mono" style={{ fontWeight: 700, fontSize: 20, color: 'var(--accent)' }}>
+            ≈ {received != null ? formatAmount(received) : '…'} {destCcy}
+          </span>
+        </span>
+      </div>
+
+      <div style={{ height: 1, background: 'rgba(255,255,255,.07)', margin: '11px 0' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="mono" style={{ fontSize: 12, color: 'var(--text-3)' }}>Курс</span>
+        <span className="mono" style={{ fontSize: 12, color: 'var(--text-1)' }}>
+          {anchorCcy && anchorVal ? `1 ${anchorCcy} = ${fmtRate(anchorVal)} UAH` : '…'}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, color: 'var(--text-3)' }}>
+        <Info size={12} strokeWidth={1.9} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 10.5, lineHeight: 1.4 }}>Фінальний курс застосується в момент переказу</span>
+      </div>
+    </div>
   )
 }
 

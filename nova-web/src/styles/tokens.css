@@ -33,6 +33,11 @@
   --over: #e0808f;
   --over-amber: #e8b27a;
 
+  /* rates / exchange */
+  --rate-up: #9fe9dc;
+  --rate-down: #e8a0a8;
+  --preview-border: rgba(127, 230, 214, 0.3);
+
   /* elevation / shadow */
   --e1: 0 4px 12px rgba(0, 0, 0, 0.35);
   --e2: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);

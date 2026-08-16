@@ -53,6 +53,12 @@ public class CardsController : ControllerBase
         var spent = await _cardService.GetSpentToday(GetUserId(), id, ct);
         return Ok(new { spentToday = spent });
     }
+    [HttpGet("currency-by-number/{cardNumber}")]
+    public async Task<IActionResult> GetCurrencyByNumber(string cardNumber, CancellationToken ct)
+    {
+        var currency = await _cardService.GetCardCurrency(cardNumber, GetUserId(), ct);
+        return Ok(new { currency });
+    }
 
     private int GetUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

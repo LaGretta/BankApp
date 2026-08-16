@@ -28,6 +28,17 @@ export interface CardSpentToday {
   spentToday: number
 }
 
+/* GET /api/rates/{currency} → скільки UAH за 1 одиницю валюти (UAH = 1) */
+export interface RateResponse {
+  currency: CurrencyCode
+  rateToUah: number
+}
+
+/* GET /api/cards/currency-by-number/{cardNumber} */
+export interface CardCurrency {
+  currency: CurrencyCode
+}
+
 /* Повертається ОДИН раз при створенні картки — містить CVV. */
 export interface CardCreated {
   id: number
