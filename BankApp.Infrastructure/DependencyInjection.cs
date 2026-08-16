@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISavingsJarRepository, SavingsJarRepository>();
+        services.AddScoped<ILoanRepository, LoanRepository>();
         
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

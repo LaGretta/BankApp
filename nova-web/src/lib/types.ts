@@ -39,6 +39,54 @@ export interface CardCurrency {
   currency: CurrencyCode
 }
 
+/* ---- Loans (Кредити) — усі числа з бекенду, НЕ рахуємо на клієнті ---- */
+export type LoanStatus = 'Active' | 'Paid' | 'Overdue'
+
+export interface LoanResponse {
+  id: number
+  accountId: number
+  principal: number
+  annualRate: number // напр. 20 (відсоток)
+  termMonths: number
+  monthlyPayment: number
+  remainingBalance: number // залишок до сплати (стартує = totalToRepay)
+  currency: CurrencyCode
+  status: LoanStatus
+  createdAt: string
+  nextPaymentDate: string
+}
+
+/* POST /api/loans/calculate — прев'ю (нічого не створює) */
+export interface LoanCalcResponse {
+  monthlyPayment: number
+  totalToRepay: number
+  totalInterest: number
+  annualRate: number
+}
+
+/* ---- Analytics ---- */
+export type AnalyticsPeriod = 'month' | 'year' | 'all'
+
+export interface AnalyticsResponse {
+  totalSpent: number
+  totalReceived: number
+  net: number
+  currency: CurrencyCode // усе конвертовано в UAH на бекенді
+  breakdown: { type: string; amount: number }[]
+  chart: { label: string; spent: number; received: number }[]
+}
+
+/* GET /api/loans/{id}/schedule */
+export interface LoanPayment {
+  id: number
+  dueDate: string
+  amount: number
+  principalPart: number
+  interestPart: number
+  isPaid: boolean
+  paidAt: string | null
+}
+
 /* Повертається ОДИН раз при створенні картки — містить CVV. */
 export interface CardCreated {
   id: number

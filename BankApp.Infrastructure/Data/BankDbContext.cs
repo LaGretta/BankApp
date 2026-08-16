@@ -14,6 +14,8 @@ public class BankDbContext : DbContext
     public DbSet<SavingsJar> SavingsJars { get; set; }
     public DbSet<JarTransaction> JarTransactions { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Loan> Loans { get; set; }
+    public DbSet<LoanPayment> LoanPayments { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -107,6 +109,36 @@ public class BankDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<Loan>(e =>
+        {
+            e.Property(x => x.Principal).HasPrecision(18, 2);
+            e.Property(x => x.AnnualRate).HasPrecision(18, 2);
+            e.Property(x => x.MonthlyPayment).HasPrecision(18, 2);
+            e.Property(x => x.RemainingBalance).HasPrecision(18, 2);
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<LoanPayment>(e =>
+        {
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.PrincipalPart).HasPrecision(18, 2);
+            e.Property(x => x.InterestPart).HasPrecision(18, 2);
+
+            e.HasOne(x => x.Loan)
+                .WithMany(l => l.Payments)
+                .HasForeignKey(x => x.LoanId)
+                .OnDelete(DeleteBehavior.Cascade);   
         });
     }
 }

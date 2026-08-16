@@ -59,7 +59,16 @@ public class TransactionRepository : ITransactionRepository
                         && t.CreatedAt >= today)
             .SumAsync(t => t.Amount, ct);
     }
-    
-    
+    public async Task<List<Transaction>> GetUserTransactionsInPeriodAsync(
+        int userId, DateTime from, DateTime to, CancellationToken ct)
+    {
+        return await _dbContext.Transactions
+            .Include(t => t.FromAccount)
+            .Include(t => t.ToAccount)
+            .Where(t => t.CreatedAt >= from && t.CreatedAt < to
+                                            && (t.FromAccount!.UserId == userId || t.ToAccount!.UserId == userId))
+            .OrderBy(t => t.CreatedAt)
+            .ToListAsync(ct);
+    }
     
 }

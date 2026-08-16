@@ -38,6 +38,22 @@
   --rate-down: #e8a0a8;
   --preview-border: rgba(127, 230, 214, 0.3);
 
+  /* loans (Кредити) */
+  --loan-accent: #7fe6d6;
+  --paid: #9fe9dc;
+  --overdue: #e8b27a;
+  --overdue-bg: rgba(232, 178, 122, 0.06);
+  --overdue-border: rgba(232, 178, 122, 0.25);
+  --commit-cool: #7fe6d6;
+  --commit-mid: #e6c78a;
+  --commit-warm: #e8887e;
+
+  /* analytics + ще */
+  --pos: #9fe9dc;
+  --neg: #e8b27a;
+  --steel: #c4cdd4;
+  --footer-dim: #3a3a42;
+
   /* elevation / shadow */
   --e1: 0 4px 12px rgba(0, 0, 0, 0.35);
   --e2: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);

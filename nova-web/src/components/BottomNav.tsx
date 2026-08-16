@@ -1,12 +1,12 @@
-import { ArrowLeftRight, LayoutGrid, Receipt, Target } from 'lucide-react'
+import { CreditCard, LayoutGrid, MoreHorizontal, Vault } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 
 const TABS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/dashboard', label: 'Головна', icon: LayoutGrid },
-  { to: '/savings', label: 'Накопичення', icon: Target },
-  { to: '/transfer', label: 'Переказ', icon: ArrowLeftRight },
-  { to: '/history', label: 'Історія', icon: Receipt },
+  { to: '/savings', label: 'Накопичення', icon: Vault },
+  { to: '/loans', label: 'Кредити', icon: CreditCard },
+  { to: '/more', label: 'Ще', icon: MoreHorizontal },
 ]
 
 export function BottomNav() {

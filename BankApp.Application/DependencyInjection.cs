@@ -17,6 +17,9 @@ public static class DependencyInjection
         services.AddScoped<ISavingsJarService, SavingsJarService>();
         services.AddMemoryCache();
         services.AddHttpClient<IExchangeRateService, ExchangeRateService>();
+        services.AddScoped<ILoanService, LoanService>();
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 
         services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

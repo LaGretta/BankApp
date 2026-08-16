@@ -18,6 +18,12 @@ import { Savings } from './screens/Savings'
 import { CreateJar } from './screens/CreateJar'
 import { JarDetail } from './screens/JarDetail'
 import { CardLimit } from './screens/CardLimit'
+import { Loans } from './screens/Loans'
+import { LoanCalculator } from './screens/LoanCalculator'
+import { LoanDetail } from './screens/LoanDetail'
+import { More } from './screens/More'
+import { Analytics } from './screens/Analytics'
+import { Rates } from './screens/Rates'
 import type { JSX } from 'react'
 
 function Protected({ children, nav = true }: { children: JSX.Element; nav?: boolean }) {
@@ -53,6 +59,13 @@ export default function App() {
         <Route path="/savings" element={<Protected><Savings /></Protected>} />
         <Route path="/jars/new" element={<Protected nav={false}><CreateJar /></Protected>} />
         <Route path="/jars/:id" element={<Protected nav={false}><JarDetail /></Protected>} />
+
+        <Route path="/loans" element={<Protected><Loans /></Protected>} />
+        <Route path="/loans/new" element={<Protected nav={false}><LoanCalculator /></Protected>} />
+        <Route path="/loans/:id" element={<Protected nav={false}><LoanDetail /></Protected>} />
+        <Route path="/more" element={<Protected><More /></Protected>} />
+        <Route path="/analytics" element={<Protected nav={false}><Analytics /></Protected>} />
+        <Route path="/rates" element={<Protected nav={false}><Rates /></Protected>} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
