@@ -291,7 +291,49 @@ Things worth reviewing if you're evaluating this codebase:
 
 ---
 
+## Running with Docker
+
+The whole stack — SQL Server, API and frontend — runs from **one command**, no local .NET, Node or SQL
+Server required.
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine +
+Compose).
+
+```bash
+docker compose up --build
+```
+
+This builds and starts three services in order:
+
+| Service | Image / build | Host port |
+| --- | --- | --- |
+| `db` | SQL Server 2022 (persisted to a named volume) | `1433` |
+| `api` | root `Dockerfile` — multi-stage .NET 10 build → ASP.NET runtime | `5203` → `8080` |
+| `web` | `nova-web/Dockerfile` — Vite build → nginx serving the static PWA | `5173` → `80` |
+
+The API waits for the database to become **healthy**, then applies **EF Core migrations automatically on
+startup** — an empty DB container is initialised for you, no manual migration step.
+
+Once it's up:
+
+- **Frontend:** <http://localhost:5173>
+- **Swagger:** <http://localhost:5203/swagger>
+
+Stop the stack with `Ctrl+C`. To tear it down and **reset the database** (drops the volume, so the next
+`up` starts from a clean, freshly-migrated DB):
+
+```bash
+docker compose down -v
+```
+
+> All database configuration (server, credentials, connection string) is supplied via environment variables
+> in `docker-compose.yml` — the in-repo `appsettings.json` is left untouched.
+
+---
+
 ## Getting started
+
+Prefer to run it natively instead of in Docker? Use the steps below.
 
 ### Prerequisites
 

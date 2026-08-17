@@ -1,0 +1,48 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Nova_Str0ng_Pass!"
+    ports:
+      - "1433:1433"
+    volumes:
+      - dbdata:/var/opt/mssql
+    healthcheck:
+      # Ready only once SQL Server accepts a real query — so the API never
+      # tries to migrate against a not-yet-listening database.
+      test:
+        - "CMD-SHELL"
+        - "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' -b || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q 'SELECT 1' -b"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      # DB config comes ONLY from here (env), overriding appsettings via the
+      # standard ConnectionStrings__DefaultConnection key.
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=BankAppDb;User Id=sa;Password=Nova_Str0ng_Pass!;TrustServerCertificate=True;"
+    ports:
+      - "5203:8080"
+    restart: on-failure
+
+  web:
+    build:
+      context: ./nova-web
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  dbdata:
