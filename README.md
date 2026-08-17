@@ -2,7 +2,7 @@
 
 **A full-stack digital bank: multi-currency accounts, premium cards, instant card-to-card transfers, savings jars, annuity loans and spending analytics — built on a .NET 10 Onion-architecture API and a React 19 + TypeScript PWA.**
 
-![Nova — bank of the future](docs/screenshots/hero.png)
+![Nova — bank of the future](docs/screenshots/nova-hero-banner.png)
 
 <p align="center"><em>Nova — «Банк майбутнього». Dark, tech-minimal, iridescent design system across 9+ screens.</em></p>
 
@@ -133,7 +133,7 @@ the refresh token itself is dead.
 
 ### Home & accounts
 
-<img src="docs/screenshots/home.png" alt="Nova home dashboard" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283667%29.png" alt="Nova home dashboard" width="380" align="right">
 
 Multi-currency accounts in **UAH / USD / EUR**, each with its own balance, cards and jars. The dashboard
 leads with the card carousel, quick actions (transfer / top-up), recent card operations and a live rates
@@ -145,7 +145,7 @@ widget.
 
 ### Cards
 
-<img src="docs/screenshots/card-back.png" alt="Card back with CVV" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283668%29.png" alt="Card back with CVV" width="380" align="right">
 
 Three tiers — **White / Black / Platinum** — with distinct skins. Numbers are generated **Luhn-valid**
 (16 digits, `4` prefix, computed check digit) and re-rolled until unique against a unique DB index. Tap the
@@ -169,7 +169,7 @@ Two flavours — by account id and **by card number** — plus top-up. Every tra
 
 ### Currency exchange
 
-<img src="docs/screenshots/converter.png" alt="Currency converter" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283669%29.png" alt="Currency converter" width="380" align="right">
 
 Live rates from the **National Bank of Ukraine** (`bank.gov.ua`), fetched through a typed `HttpClient` and
 cached per currency for **1 hour** so the API stays fast and never hammers the upstream. The same service
@@ -181,7 +181,7 @@ powers cross-currency transfers, the rates widget and analytics normalisation.
 
 ### Savings jars
 
-<img src="docs/screenshots/savings-jar.png" alt="Savings jar detail" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283670%29.png" alt="Savings jar detail" width="380" align="right">
 
 Goal-based jars bound to an account: name, icon, target amount, optional target date. Deposit and withdraw
 move real money between the account and the jar under a DB transaction, each operation carrying its own
@@ -194,7 +194,7 @@ the account.
 
 ### Loans
 
-<img src="docs/screenshots/loan-calculator.png" alt="Loan calculator" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283672%29.png" alt="Loan calculator" width="380" align="right">
 
 A full annuity-loan flow at a fixed **20 % APR**. The calculator endpoint returns monthly payment, total
 interest and total repayable for any principal/term before anything is committed.
@@ -203,7 +203,7 @@ interest and total repayable for any principal/term before anything is committed
 
 <br clear="right">
 
-<img src="docs/screenshots/loan-confirm.png" alt="Loan confirmation" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283673%29.png" alt="Loan confirmation" width="380" align="right">
 
 Confirmation shows the exact terms the server computed — term, monthly payment, first payment date, rate,
 overpayment and total — before the principal is credited.
@@ -212,7 +212,7 @@ overpayment and total — before the principal is credited.
 
 <br clear="right">
 
-<img src="docs/screenshots/loan-detail.png" alt="Loan detail with amortization schedule" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283675%29.png" alt="Loan detail with amortization schedule" width="380" align="right">
 
 Taking the loan generates the **entire amortization schedule up front**: every installment with its due
 date, principal part and interest part (with the final installment closing the balance exactly). Paying
@@ -225,7 +225,7 @@ when the last one clears. Installments past their due date are surfaced as overd
 
 ### Analytics
 
-<img src="docs/screenshots/analytics.png" alt="Analytics screen" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283676%29.png" alt="Analytics screen" width="380" align="right">
 
 Spending vs income over **month / year / all time**, with a grouped bar chart, net flow, and a breakdown by
 operation type. Amounts in USD and EUR are normalised to UAH at live rates, so a multi-currency portfolio
@@ -237,7 +237,7 @@ still rolls up into one honest number.
 
 ### More hub
 
-<img src="docs/screenshots/more-hub.png" alt="More hub" width="380" align="right">
+<img src="docs/screenshots/Знімок%20екрана%20%283677%29.png" alt="More hub" width="380" align="right">
 
 Identity card, entry points to analytics, rates, accounts and full history, plus session controls.
 
@@ -251,11 +251,11 @@ Identity card, entry points to analytics, rates, accounts and full history, plus
 
 | | |
 | --- | --- |
-| ![Home](docs/screenshots/home.png)<br>**Home dashboard** | ![Card back](docs/screenshots/card-back.png)<br>**Card back · CVV on demand** |
-| ![Converter](docs/screenshots/converter.png)<br>**Currency converter** | ![Savings jar](docs/screenshots/savings-jar.png)<br>**Savings jar** |
-| ![Loan calculator](docs/screenshots/loan-calculator.png)<br>**Loan calculator** | ![Loan confirmation](docs/screenshots/loan-confirm.png)<br>**Loan confirmation** |
-| ![Loan detail](docs/screenshots/loan-detail.png)<br>**Amortization schedule** | ![Analytics](docs/screenshots/analytics.png)<br>**Analytics** |
-| ![More hub](docs/screenshots/more-hub.png)<br>**More hub** | ![Hero](docs/screenshots/hero.png)<br>**Design system showcase** |
+| ![Home](docs/screenshots/Знімок%20екрана%20%283667%29.png)<br>**Home dashboard** | ![Card back](docs/screenshots/Знімок%20екрана%20%283668%29.png)<br>**Card back · CVV on demand** |
+| ![Converter](docs/screenshots/Знімок%20екрана%20%283669%29.png)<br>**Currency converter** | ![Savings jar](docs/screenshots/Знімок%20екрана%20%283670%29.png)<br>**Savings jar** |
+| ![Loan calculator](docs/screenshots/Знімок%20екрана%20%283672%29.png)<br>**Loan calculator** | ![Loan confirmation](docs/screenshots/Знімок%20екрана%20%283673%29.png)<br>**Loan confirmation** |
+| ![Loan detail](docs/screenshots/Знімок%20екрана%20%283675%29.png)<br>**Amortization schedule** | ![Analytics](docs/screenshots/Знімок%20екрана%20%283676%29.png)<br>**Analytics** |
+| ![More hub](docs/screenshots/Знімок%20екрана%20%283677%29.png)<br>**More hub** | ![Hero](docs/screenshots/nova-hero-banner.png)<br>**Design system showcase** |
 
 ---
 
