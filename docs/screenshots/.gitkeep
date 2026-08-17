@@ -1,0 +1,17 @@
+# Nova — screenshots
+#
+# Drop the 10 app screenshots here with EXACTLY these filenames
+# (the root README.md references them by these paths):
+#
+#   hero.png            — "Банк майбутнього" landing showcase (HERO)
+#   home.png            — Home dashboard (card-led, greeting, quick actions)
+#   card-back.png       — Flipped card back (magstripe / CVV / holo)
+#   converter.png       — Currency converter sheet (USD → UAH)
+#   savings-jar.png     — "Дім" liquid savings jar detail
+#   loan-calculator.png — "Новий кредит" calculator (slider + monthly payment)
+#   loan-confirm.png    — Loan confirmation sheet
+#   loan-detail.png     — Loan detail (progress ring + amortization schedule)
+#   analytics.png       — Analytics (grouped bars: received vs spent)
+#   more-hub.png        — "Ще" identity / more hub
+#
+# PNG recommended. Keep names lowercase; do not rename — links will break.
