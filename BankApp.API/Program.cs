@@ -15,7 +15,10 @@ builder.Host.UseSerilog((context, config) =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<BankApp.API.Filters.ValidationFilter>();
+    })
     .AddJsonOptions(o =>
         o.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter()));
